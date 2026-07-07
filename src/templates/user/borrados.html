@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Usuarios borrados</h1>
+<p><a href="{{ url_for('user.listar') }}">Volver a usuarios</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Sucursal</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario['name'] }} {{ usuario['last_name'] }}</td>
+            <td>{{ usuario['username'] or '—' }}</td>
+            <td>{{ usuario['role'] }}</td>
+            <td>{{ usuario['branch_id'] or '—' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('user.reactivar', id_usuario=usuario['id']) }}" style="display:inline">
+                    <button type="submit">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay usuarios borrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,117 @@
+RODO - notas personales sobre AppPanacar
+=========================================
+Rodo comenzó como un error de tipeo de TO-DO Lists. Hoy, es parte esencial de
+mis proyectos. Si bien todos conocemos el clásico README, como humanos siempre
+necesitamos un espacio donde ser nosotros mismos y plasmar nuestras ideas. Rodo
+es eso y mucho más para mí.
+
+
+QUÉ ES ESTE PROYECTO
+---------------------
+AppPanacar es el sistema interno para un taller de chapería y pintura con dos
+sucursales. Uso real: 6 computadoras y 6 celulares, no necesariamente
+conectados al WiFi (hay que asumir que puede andar offline o con conexión
+intermitente entre sucursales).
+
+Este repo arrancó como copia de otro proyecto (AppEmar, un local de otro
+rubro) que ya traía una arquitectura modular con Tkinter de interfaz. Esa UI
+de escritorio no sirve para este proyecto: la idea es que el frontend final
+sea HTML (para que ande en compus y celulares por igual sin instalar nada
+nativo). Por eso se limpió todo lo que era Tkinter y quedó solo el backend
+(SQLite + lógica de negocio), a la espera de que se diseñe el frontend HTML
+y cómo se va a servir.
+
+
+QUÉ HICIMOS (limpieza post-copia)
+-----------------------------------
+- Se borró toda la capa de UI de Tkinter: main.py (la ventana raíz),
+  src/ui_nav.py, src/constants/styles.py, y todos los ui.py / *_dialog.py /
+  login_ui.py / listado_frame.py de cada módulo. Sin frontend por ahora,
+  a propósito.
+- Se limpiaron los __pycache__ sueltos que habían quedado versionados fuera
+  del .gitignore.
+- src/constants/settings.py perdió WINDOW_WIDTH/WINDOW_HEIGHT (geometría de
+  Tkinter); quedaron APP_NAME, VERSION, TIMEOUT_SECONDS, MAX_LOGIN_ATTEMPTS
+  que sí son lógica de negocio.
+- Settings.APP_NAME pasó de "APPEMAR - Sistema Interno" a "Panacar - Sistema
+  Interno". Queda pendiente revisar si aparece "AppEmar"/"APPEMAR" en algún
+  otro lado (textos, nombres de tabla, etc.).
+- validar_cuit (src/constants/validations.py) ahora valida también el dígito
+  verificador del CUIT (algoritmo módulo 11, el mismo que usa AFIP), no solo
+  la cantidad de dígitos. Antes cualquier CUIT de 11 dígitos pasaba aunque
+  fuera inválido.
+- validar_password (nueva, en validations.py): largo mínimo 8 y máximo 64,
+  siguiendo NIST SP 800-63B (el estándar actual de la comunidad para
+  políticas de contraseñas). A propósito sin reglas de complejidad forzada
+  (mayúscula/número/símbolo) — ese mismo estándar las desaconseja porque en
+  la práctica producen contraseñas predecibles sin mejorar la seguridad
+  real. Enganchada en user/logic.py: se valida la contraseña nueva en texto
+  plano en crear_usuario y actualizar_usuario, antes de hashear (con
+  cuidado de no correrla sobre el hash ya guardado cuando actualizar_usuario
+  no recibe una contraseña nueva).
+- validar_telefono ahora sigue el formato E.164 (estándar internacional
+  ITU-T): "+" opcional + entre 8 y 15 dígitos, en vez de exigir
+  exactamente 13 dígitos hardcodeado a Argentina. Acepta con o sin código
+  de país.
+
+Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
+- Cada área (users, clients, products, branches) tiene su propio db.py /
+  logic.py, todos compartiendo la misma DB SQLite.
+- Conexión centralizada en src/db/connection.py (GestorDB.conectar() +
+  obtener_conexion() como context manager, con foreign_keys ON).
+- Esquema de las 4 tablas, todas con columna status (1 = activo, 0 = borrado
+  lógico) para no perder datos con un DELETE real.
+- CRUD completo + validaciones de negocio en los 4 módulos, con las
+  validaciones genéricas (email, teléfono, DNI, CUIT, fecha/edad mínima,
+  campos obligatorios) centralizadas en src/constants/validations.py.
+- Contraseñas de usuario hasheadas con pbkdf2_hmac + salt (nunca texto plano).
+- products: precio mayorista/minorista con validación cruzada, y stock que
+  puede ser NULL para productos sin inventario físico.
+- users con role (Admin / Supervisor / Vendedor) y branch_id (FK a branches,
+  nullable). Vendedor es el rol que entra sin contraseña.
+- src/permissions.py centraliza qué rol puede hacer qué (gestión de
+  usuarios, jerarquía de cambio de contraseñas).
+- src/session.py guarda el usuario logueado en memoria del proceso.
+- login real vía iniciar_sesion() en user/logic.py (mensaje de error
+  genérico, bloqueo a los MAX_LOGIN_ATTEMPTS intentos fallidos).
+
+
+QUÉ SEGUIRÍA HACIENDO
+----------------------
+- Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
+  (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
+  escenario sin WiFi?). Todavía sin diseñar a propósito.
+- Repasar y renombrar restos de "AppEmar" que vayan apareciendo (ya se hizo
+  Settings.APP_NAME) al contexto de Panacar.
+- Pensar el modo offline/multi-sucursal en serio: hoy la DB es un único
+  SQLite local; con 2 sucursales y máquinas no siempre conectadas hay que
+  decidir si cada sucursal tiene su propia DB y cómo se sincronizan, o si se
+  apunta a un servidor central que a veces no es alcanzable.
+- Tests automatizados (pytest) en vez de scripts sueltos.
+- Migraciones de esquema reales (ALTER TABLE) para columnas nuevas, en vez de
+  borrar la DB de dev.
+- Un módulo de ventas/movimientos que relacione clients + products + users +
+  branches.
+
+
+VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
+---------------------------------------------------------------------
+- Sucursales acotadas: cada usuario pertenece a una sola sucursal y responde
+  en nombre de ella.
+- Transferencias entre sucursales (efectivo o producto) sin poder modificar
+  la otra sucursal directamente — surge del futuro módulo de ventas/
+  movimientos.
+- Mensajería entre sucursales tipo "archivos cifrados" para pedidos de
+  actualización, conciliaciones o aprobaciones con descuento.
+- Posible 2FA (TOTP con pyotp) para el login de Admin/Supervisor más
+  adelante.
+
+
+COSAS BUENAS (de la base heredada, vale la pena no perderlas)
+-----------------------------------------------------------------
+- Separar en db/logic desde el arranque hizo que cada módulo nuevo fuera
+  calcar el patrón anterior en vez de inventar de nuevo — y esto sigue
+  siendo cierto ahora que no hay UI.
+- Validaciones compartidas centralizadas en vez de duplicadas por módulo.
+- Casos borde reales del negocio pensados antes de convertirse en bugs
+  (E-SIM sin stock, DNI vs CUIT, precio mayorista/minorista).

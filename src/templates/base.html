@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <header class="barra">
+        <span>{{ app_name }} — Hola, {{ session['name'] }} ({{ session['role'] }})</span>
+        <a href="{{ url_for('user.logout') }}">Salir</a>
+    </header>
+    <nav class="menu">
+        <a href="{{ url_for('administrar.index') }}">Administrar</a>
+    </nav>
+    {% endif %}
+
+    <main>
+        {% with mensajes = get_flashed_messages() %}
+            {% if mensajes %}
+            <ul class="flashes">
+                {% for mensaje in mensajes %}<li>{{ mensaje }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

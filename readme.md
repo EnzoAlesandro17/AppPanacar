@@ -1,0 +1,74 @@
+## Estructura del proyecto
+
+```
+AppPanacar/
+├── RODO.txt                        # Notas personales del desarrollo: qué se hizo, qué falta, decisiones e ideas a futuro
+├── readme.md                       # Este archivo
+├── requirements.txt                 # Dependencias del proyecto (Flask)
+├── app.py                           # Entrypoint: crea la app con create_app() y la corre (flask run / python app.py)
+├── .gitignore                       # Ignora .venv/, data/, __pycache__/ y .env
+├── data/
+│   └── database.db                  # Base de datos SQLite local con los datos (se crea/usa en runtime, ignorada por git)
+├── .venv/                           # Entorno virtual de Python (ignorado por git)
+├── .vscode/
+│   └── settings.json                 # Configuración del editor (selección del entorno de Python)
+├── .claude/
+│   └── settings.local.json           # Permisos locales de Claude Code para este repo
+└── src/
+    ├── __init__.py
+    ├── app.py                        # create_app(): fábrica de la app Flask, crea las tablas y registra los blueprints
+    ├── auth.py                       # login_required: exige sesión activa (flask.session) para acceder a una vista
+    ├── config.py                     # Rutas base del proyecto, ubicación de la base de datos (DB_PATH) y SECRET_KEY
+    ├── exceptions.py                 # ValidationError: excepción usada en todo el backend para errores de validación de negocio
+    ├── permissions.py                # Reglas de qué rol (Admin/Supervisor/Vendedor) puede hacer qué acción, centralizadas
+    ├── constants/
+    │   ├── settings.py                # Constantes generales: nombre y versión de la app, timeout, intentos máximos de login
+    │   └── validations.py             # Validaciones genéricas reutilizables: email, teléfono, DNI, CUIT, fechas, edad mínima, campos obligatorios
+    ├── db/
+    │   ├── __init__.py
+    │   └── connection.py              # Conexión centralizada a SQLite: GestorDB.conectar() y obtener_conexion() (context manager, con foreign_keys ON)
+    ├── static/
+    │   └── css/style.css              # Estilos mínimos compartidos por todas las páginas
+    ├── templates/
+    │   ├── base.html                  # Layout común: header con usuario logueado, nav, mensajes flash
+    │   ├── administrar/index.html      # Índice de "Administrar" con los links a cada módulo
+    │   ├── user/{login,listar}.html
+    │   ├── branches/listar.html
+    │   ├── clients/listar.html
+    │   └── products/listar.html
+    └── modules/
+        └── administrar/
+            ├── __init__.py
+            ├── routes.py               # Blueprint 'administrar': índice de la sección (/administrar)
+            ├── branches/               # Módulo de sucursales
+            │   ├── db.py                 # Creación de la tabla branches
+            │   ├── logic.py              # CRUD y validaciones de sucursales (alta, edición, borrado lógico, búsqueda)
+            │   └── routes.py             # Blueprint 'branches': vistas HTTP (/branches), solo lectura por ahora
+            ├── clients/                 # Módulo de clientes
+            │   ├── db.py                 # Creación de la tabla clients
+            │   ├── logic.py              # CRUD y validaciones de clientes (DNI/CUIT, teléfono, email, borrado lógico)
+            │   └── routes.py             # Blueprint 'clients': vistas HTTP (/clients), solo lectura por ahora
+            ├── products/                # Módulo de productos
+            │   ├── db.py                 # Creación de la tabla products
+            │   ├── logic.py              # CRUD, validación de precios mayorista/minorista y manejo de stock (incluye productos sin stock físico)
+            │   └── routes.py             # Blueprint 'products': vistas HTTP (/products), solo lectura por ahora
+            └── user/                    # Módulo de usuarios
+                ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
+                ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
+                └── routes.py             # Blueprint 'user': login, logout y listado (/user)
+```
+
+Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Por ahora las vistas de sucursales, clientes, productos y usuarios son solo de lectura (listar) — falta cargar/editar/borrar desde HTML, que hoy solo existe en la capa de lógica. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
+
+Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
+
+## Medidas de seguridad
+
+- **Contraseñas hasheadas**: nunca se guarda texto plano. Se usa `pbkdf2_hmac` (SHA-256, 100.000 iteraciones) con salt aleatorio por usuario (`src/modules/administrar/user/logic.py`).
+- **Política de contraseñas**: largo mínimo 8 y máximo 64 caracteres, siguiendo NIST SP 800-63B (el estándar actual de la comunidad). Sin reglas de complejidad forzada (mayúscula/número/símbolo) a propósito: ese mismo estándar las desaconseja porque en la práctica producen contraseñas predecibles sin mejorar la seguridad real (`validar_password` en `src/constants/validations.py`).
+- **Login sin fuga de información**: si el usuario o la contraseña fallan, el mensaje de error es siempre el mismo genérico, para no revelar cuál de los dos estuvo mal. Se bloquea tras `MAX_LOGIN_ATTEMPTS` (3) intentos fallidos (`iniciar_sesion` en `user/logic.py`).
+- **Permisos por rol**: quién puede gestionar usuarios o cambiar contraseñas de quién está centralizado en `src/permissions.py`, con una jerarquía real (Admin > Supervisor > Vendedor) en vez de reglas sueltas repetidas por módulo.
+- **Validación de documentos reales**: el CUIT valida su dígito verificador con el algoritmo módulo 11 (el mismo que usa AFIP), no solo la cantidad de dígitos — evita cargar CUITs inventados o mal tipeados (`validar_cuit`).
+- **Teléfonos en formato estándar**: se valida contra E.164 (estándar internacional ITU-T), en vez de un formato fijo hardcodeado a un solo país (`validar_telefono`).
+- **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado), así nunca se pierden datos de auditoría por error.
+- **Consultas parametrizadas**: todas las queries a SQLite usan placeholders (`?`), nunca se arma SQL concatenando texto ingresado por el usuario — evita inyección SQL.

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Sucursales</h1>
+<p>
+    <a href="{{ url_for('branches.nuevo') }}">+ Nueva sucursal</a> ·
+    <a href="{{ url_for('branches.borrados') }}">Ver borradas</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Ciudad</th>
+            <th>Teléfono</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sucursal in sucursales %}
+        <tr>
+            <td>{{ sucursal['name'] }}</td>
+            <td>{{ sucursal['code'] or '—' }}</td>
+            <td>{{ sucursal['city'] or '—' }}</td>
+            <td>{{ sucursal['phone'] or '—' }}</td>
+            <td>
+                <a href="{{ url_for('branches.editar', id_sucursal=sucursal['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('branches.borrar', id_sucursal=sucursal['id']) }}"
+                      onsubmit="return confirm('¿Borrar la sucursal {{ sucursal['name'] }}?');" style="display:inline">
+                    <button type="submit">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay sucursales cargadas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

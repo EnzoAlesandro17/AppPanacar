@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar cliente' if accion == 'editar' else 'Nuevo cliente' }}</h1>
+<form method="post">
+    <label>Nombre
+        <input type="text" name="name" value="{{ cliente.name or '' if cliente else '' }}" required>
+    </label>
+    <label>Apellido
+        <input type="text" name="last_name" value="{{ cliente.last_name or '' if cliente else '' }}" required>
+    </label>
+    <label>DNI/CUIT
+        <input type="text" name="dni_cuit" value="{{ cliente.dni_cuit or '' if cliente else '' }}" required>
+    </label>
+    <label>Teléfono
+        <input type="text" name="phone" value="{{ cliente.phone or '' if cliente else '' }}">
+    </label>
+    <label>Email
+        <input type="email" name="email" value="{{ cliente.email or '' if cliente else '' }}">
+    </label>
+    <button type="submit">Guardar</button>
+</form>
+<p><a href="{{ url_for('clients.listar') }}">Volver</a></p>
+{% endblock %}

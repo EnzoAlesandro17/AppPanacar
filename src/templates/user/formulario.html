@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar usuario' if accion == 'editar' else 'Nuevo usuario' }}</h1>
+<form method="post">
+    <label>Nombre
+        <input type="text" name="name" value="{{ usuario.name or '' if usuario else '' }}" required>
+    </label>
+    <label>Apellido
+        <input type="text" name="last_name" value="{{ usuario.last_name or '' if usuario else '' }}" required>
+    </label>
+    <label>DNI
+        <input type="text" name="dni" value="{{ usuario.dni or '' if usuario else '' }}" required>
+    </label>
+    <label>Código
+        <input type="text" name="code" value="{{ usuario.code or '' if usuario else '' }}">
+    </label>
+    <label>Rol
+        <select name="role" required>
+            {% for rol in roles %}
+            <option value="{{ rol }}" {{ 'selected' if usuario and usuario.role == rol else '' }}>{{ rol }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Sucursal
+        <select name="branch_id">
+            <option value="">— Sin sucursal —</option>
+            {% for sucursal in sucursales %}
+            <option value="{{ sucursal['id'] }}" {{ 'selected' if usuario and usuario.branch_id == sucursal['id'] else '' }}>{{ sucursal['name'] }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Usuario (para Admin/Supervisor; Vendedor entra solo con su nombre de usuario, sin contraseña)
+        <input type="text" name="username" value="{{ usuario.username or '' if usuario else '' }}">
+    </label>
+    <label>Contraseña{{ ' (dejar vacío para no cambiarla)' if accion == 'editar' else '' }}
+        <input type="password" name="password">
+    </label>
+    <label>Email
+        <input type="email" name="email" value="{{ usuario.email or '' if usuario else '' }}">
+    </label>
+    <label>Fecha de nacimiento
+        <input type="date" name="birth_date" value="{{ usuario.birth_date or '' if usuario else '' }}">
+    </label>
+    <label>Teléfono
+        <input type="text" name="phone" value="{{ usuario.phone or '' if usuario else '' }}">
+    </label>
+    <button type="submit">Guardar</button>
+</form>
+<p><a href="{{ url_for('user.listar') }}">Volver</a></p>
+{% endblock %}

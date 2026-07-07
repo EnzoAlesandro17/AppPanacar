@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Sucursales borradas</h1>
+<p><a href="{{ url_for('branches.listar') }}">Volver a sucursales</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Ciudad</th>
+            <th>Teléfono</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sucursal in sucursales %}
+        <tr>
+            <td>{{ sucursal['name'] }}</td>
+            <td>{{ sucursal['code'] or '—' }}</td>
+            <td>{{ sucursal['city'] or '—' }}</td>
+            <td>{{ sucursal['phone'] or '—' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('branches.reactivar', id_sucursal=sucursal['id']) }}" style="display:inline">
+                    <button type="submit">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay sucursales borradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

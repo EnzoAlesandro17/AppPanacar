@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Usuarios</h1>
+<p>
+    <a href="{{ url_for('user.nuevo') }}">+ Nuevo usuario</a> ·
+    <a href="{{ url_for('user.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Sucursal</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario['name'] }} {{ usuario['last_name'] }}</td>
+            <td>{{ usuario['username'] or '—' }}</td>
+            <td>{{ usuario['role'] }}</td>
+            <td>{{ usuario['branch_id'] or '—' }}</td>
+            <td>
+                <a href="{{ url_for('user.editar', id_usuario=usuario['id']) }}">Editar</a>
+                {% if usuario['id'] != session.get('user_id') %}
+                <form method="post" action="{{ url_for('user.borrar', id_usuario=usuario['id']) }}"
+                      onsubmit="return confirm('¿Borrar al usuario {{ usuario['name'] }} {{ usuario['last_name'] }}?');" style="display:inline">
+                    <button type="submit">Borrar</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay usuarios cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

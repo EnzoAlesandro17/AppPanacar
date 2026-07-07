@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Clientes</h1>
+<p>
+    <a href="{{ url_for('clients.nuevo') }}">+ Nuevo cliente</a> ·
+    <a href="{{ url_for('clients.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>DNI/CUIT</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cliente in clientes %}
+        <tr>
+            <td>{{ cliente['name'] }} {{ cliente['last_name'] }}</td>
+            <td>{{ cliente['dni_cuit'] }}</td>
+            <td>{{ cliente['phone'] or '—' }}</td>
+            <td>{{ cliente['email'] or '—' }}</td>
+            <td>
+                <a href="{{ url_for('clients.editar', id_cliente=cliente['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('clients.borrar', id_cliente=cliente['id']) }}"
+                      onsubmit="return confirm('¿Borrar al cliente {{ cliente['name'] }} {{ cliente['last_name'] }}?');" style="display:inline">
+                    <button type="submit">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay clientes cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar sucursal' if accion == 'editar' else 'Nueva sucursal' }}</h1>
+<form method="post">
+    <label>Nombre
+        <input type="text" name="name" value="{{ sucursal.name or '' if sucursal else '' }}" required>
+    </label>
+    <label>Código
+        <input type="text" name="code" value="{{ sucursal.code or '' if sucursal else '' }}">
+    </label>
+    <label>País
+        <input type="text" name="country" value="{{ sucursal.country or '' if sucursal else '' }}">
+    </label>
+    <label>Ciudad
+        <input type="text" name="city" value="{{ sucursal.city or '' if sucursal else '' }}">
+    </label>
+    <label>Dirección
+        <input type="text" name="address" value="{{ sucursal.address or '' if sucursal else '' }}">
+    </label>
+    <label>Email
+        <input type="email" name="email" value="{{ sucursal.email or '' if sucursal else '' }}">
+    </label>
+    <label>Teléfono
+        <input type="text" name="phone" value="{{ sucursal.phone or '' if sucursal else '' }}">
+    </label>
+    <button type="submit">Guardar</button>
+</form>
+<p><a href="{{ url_for('branches.listar') }}">Volver</a></p>
+{% endblock %}
