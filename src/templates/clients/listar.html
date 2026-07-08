@@ -13,7 +13,6 @@
             <th>DNI/CUIT</th>
             <th>Teléfono</th>
             <th>Email</th>
-            <th>Aseguradora</th>
             <th></th>
         </tr>
     </thead>
@@ -24,7 +23,6 @@
             <td>{{ cliente['dni_cuit'] }}</td>
             <td>{{ cliente['phone'] or '—' }}</td>
             <td>{{ cliente['email'] or '—' }}</td>
-            <td>{{ cliente['insurance_company_name'] or '—' }}</td>
             <td>
                 <a href="{{ url_for('clients.editar', id_cliente=cliente['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('clients.borrar', id_cliente=cliente['id']) }}"
@@ -35,7 +33,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">No hay clientes cargados.</td></tr>
+        <tr><td colspan="5">No hay clientes cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

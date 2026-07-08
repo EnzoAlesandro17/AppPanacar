@@ -1,5 +1,4 @@
 from src.db.connection import obtener_conexion
-from src.modules.administrar.validaciones.insurance_companies.db import TABLA as TABLA_INSURANCE_COMPANIES
 
 TABLA = "clients"
 
@@ -16,17 +15,14 @@ def crear_tabla():
                 dni_cuit TEXT NOT NULL UNIQUE,
                 phone TEXT,
                 email TEXT,
-                insurance_company_id INTEGER REFERENCES {TABLA_INSURANCE_COMPANIES}(id),
                 status INTEGER NOT NULL DEFAULT 1
             )
             """
         )
 
         columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
-        if "insurance_company_id" not in columnas:
-            conexion.execute(
-                f"ALTER TABLE {TABLA} "
-                f"ADD COLUMN insurance_company_id INTEGER REFERENCES {TABLA_INSURANCE_COMPANIES}(id)"
-            )
+        if "insurance_company_id" in columnas:
+            # La aseguradora se va a asociar al siniestro, no al cliente (ver RODO.txt).
+            conexion.execute(f"ALTER TABLE {TABLA} DROP COLUMN insurance_company_id")
 
         conexion.commit()

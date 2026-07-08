@@ -90,9 +90,13 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
       borra la columna vieja (crear_tabla_compatibilidad en products/db.py).
       Fue la primera migración de esquema real (ALTER TABLE) del proyecto,
       sin borrar la DB de dev.
-    - insurance_companies (compañías de seguro): clients ganó un
-      insurance_company_id (FK, nullable) para vincular un cliente a su
-      aseguradora — pensado para el seguimiento de siniestros.
+    - insurance_companies (compañías de seguro): catálogo cargado, todavía
+      sin engancharse a ningún otro módulo. Se probó primero vincularlo
+      directo a clients (insurance_company_id), pero la aseguradora no es
+      un dato del cliente sino del siniestro (un mismo cliente puede tener
+      siniestros con distintas aseguradoras) — se revirtió esa FK y quedó
+      solo el catálogo, a la espera del módulo de siniestros (ver VISIÓN A
+      FUTURO).
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -120,6 +124,12 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
+- El "Volver" de arriba de cada formulario/listado (ej. branches/formulario.html,
+  clients/formulario.html) hoy es un link suelto de texto plano. Cambiarlo por
+  un breadcrumb tipo carpetas, ej. "Administración / Clientes", donde cada
+  palabra del camino sea un link a ese nivel (Administración vuelve a
+  /administrar, Clientes vuelve al listado) en vez de un solo botón "Volver"
+  que siempre pega el mismo paso para atrás.
 
 
 VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
@@ -133,6 +143,26 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
   actualización, conciliaciones o aprobaciones con descuento.
 - Posible 2FA (TOTP con pyotp) para el login de Admin/BackOffice más
   adelante.
+- Módulo de siniestros: es la entidad real que une cliente + vehículo +
+  aseguradora (no un dato suelto de cada uno por separado). Un mismo
+  cliente puede tener varios siniestros, cada uno con su propia
+  aseguradora y su propio vehículo. Necesita:
+    - Un id legible para humanos (no solo el autoincrement de la tabla),
+      pensado como un resumen de patente + DNI, para que se pueda
+      identificar un siniestro de un vistazo sin abrir el registro.
+    - Selector de cliente existente o alta de uno nuevo sin salir del
+      formulario del siniestro.
+    - Selector de vehículo existente o alta de uno nuevo (ver ítem
+      siguiente) sin salir del formulario.
+    - Selector de compañía de seguro (ya existe el catálogo
+      insurance_companies, falta el módulo que lo consuma).
+    - El resto de los datos del siniestro (fecha, descripción, estado,
+      etc.) todavía sin definir.
+- Tabla de vehículos: hoy vehicle_brands es solo el catálogo de marcas
+  (Toyota, Ford, etc.), no vehículos concretos. Falta una tabla de
+  vehículos reales (patente, marca -FK a vehicle_brands-, modelo, año,
+  dueño/cliente) para que el siniestro pueda referenciar "el Hilux de tal
+  cliente" y no repetir esos datos sueltos cada vez.
 
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)

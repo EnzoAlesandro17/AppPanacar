@@ -65,7 +65,7 @@ AppPanacar/
                 │   ├── db.py
                 │   ├── logic.py            # CRUD y borrado lógico
                 │   └── routes.py           # Blueprint 'vehicle_brands' (/vehicle-brands)
-                └── insurance_companies/   # Compañías de seguro (FK desde clients)
+                └── insurance_companies/   # Compañías de seguro (catálogo, todavía sin usar desde otro módulo)
                     ├── db.py
                     ├── logic.py            # CRUD y borrado lógico
                     └── routes.py           # Blueprint 'insurance_companies' (/insurance-companies)
@@ -73,7 +73,7 @@ AppPanacar/
 
 Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
 
-Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. No son texto libre: la compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) referencia una marca cargada en el catálogo, y un cliente (`clients.insurance_company_id`) puede vincularse a una compañía de seguro cargada ahí (útil para el seguimiento de siniestros en un taller de chapería). La migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`).
+Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. La compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) ya referencia una marca cargada en el catálogo en vez de texto libre; la migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`). Compañías de seguro todavía no está enganchado a ningún otro módulo: la aseguradora va a ir asociada al futuro siniestro (cliente + vehículo + aseguradora), no al cliente directamente — ver RODO.txt.
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 

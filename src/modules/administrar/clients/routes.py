@@ -10,20 +10,17 @@ from src.modules.administrar.clients.logic import (
     obtener_por_id,
     reactivar_cliente,
 )
-from src.modules.administrar.validaciones.insurance_companies.logic import listar_aseguradoras
 
 clients_bp = Blueprint("clients", __name__, url_prefix="/clients")
 
 
 def _datos_del_form():
-    insurance_company_id = request.form.get("insurance_company_id", "").strip()
     return {
         "name": request.form.get("name", "").strip(),
         "last_name": request.form.get("last_name", "").strip(),
         "dni_cuit": request.form.get("dni_cuit", "").strip(),
         "phone": request.form.get("phone", "").strip() or None,
         "email": request.form.get("email", "").strip() or None,
-        "insurance_company_id": int(insurance_company_id) if insurance_company_id else None,
     }
 
 
@@ -37,23 +34,17 @@ def listar():
 @clients_bp.route("/nuevo", methods=["GET", "POST"])
 @login_required
 def nuevo():
-    aseguradoras = listar_aseguradoras()
-
     if request.method == "POST":
         datos = _datos_del_form()
         try:
             crear_cliente(**datos)
         except ValidationError as error:
             flash(str(error), "error")
-            return render_template(
-                "clients/formulario.html", cliente=datos, accion="nueva", aseguradoras=aseguradoras
-            )
+            return render_template("clients/formulario.html", cliente=datos, accion="nueva")
         flash("Cliente creado.", "success")
         return redirect(url_for("clients.listar"))
 
-    return render_template(
-        "clients/formulario.html", cliente=None, accion="nueva", aseguradoras=aseguradoras
-    )
+    return render_template("clients/formulario.html", cliente=None, accion="nueva")
 
 
 @clients_bp.route("/<int:id_cliente>/editar", methods=["GET", "POST"])
@@ -64,29 +55,19 @@ def editar(id_cliente):
         flash("El cliente no existe.", "error")
         return redirect(url_for("clients.listar"))
 
-    aseguradoras = listar_aseguradoras()
-
     if request.method == "POST":
         datos = _datos_del_form()
-        quitar_insurance_company_id = not request.form.get("insurance_company_id", "").strip()
         try:
-            actualizar_cliente(
-                id_cliente, quitar_insurance_company_id=quitar_insurance_company_id, **datos
-            )
+            actualizar_cliente(id_cliente, **datos)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "clients/formulario.html",
-                cliente={**datos, "id": id_cliente},
-                accion="editar",
-                aseguradoras=aseguradoras,
+                "clients/formulario.html", cliente={**datos, "id": id_cliente}, accion="editar"
             )
         flash("Cliente actualizado.", "success")
         return redirect(url_for("clients.listar"))
 
-    return render_template(
-        "clients/formulario.html", cliente=dict(cliente), accion="editar", aseguradoras=aseguradoras
-    )
+    return render_template("clients/formulario.html", cliente=dict(cliente), accion="editar")
 
 
 @clients_bp.route("/<int:id_cliente>/borrar", methods=["POST"])
