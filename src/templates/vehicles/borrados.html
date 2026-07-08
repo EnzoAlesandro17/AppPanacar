@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Vehículos borrados</h1>
+<p><a href="{{ url_for('vehicles.listar') }}">Volver a vehículos</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Dominio</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Año</th>
+            <th>Color</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vehiculo in vehiculos %}
+        <tr>
+            <td>{{ vehiculo['license_plate'] }}</td>
+            <td>{{ vehiculo['brand_name'] }}</td>
+            <td>{{ vehiculo['model'] }}</td>
+            <td>{{ vehiculo['year'] }}</td>
+            <td>{{ vehiculo['color'] or '—' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('vehicles.reactivar', id_vehiculo=vehiculo['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No hay vehículos borrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

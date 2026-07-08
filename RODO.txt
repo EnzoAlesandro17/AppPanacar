@@ -97,17 +97,27 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
       siniestros con distintas aseguradoras) — se revirtió esa FK y quedó
       solo el catálogo, a la espera del módulo de siniestros (ver VISIÓN A
       FUTURO).
+- vehicles (src/modules/administrar/vehicles/): tabla de vehículos
+  concretos, primer paso hacia el módulo de siniestros. Marca (FK a
+  vehicle_brands), modelo, año y dominio son obligatorios; color, número
+  de chasis y número de motor son opcionales. El dominio se valida con
+  formato argentino viejo (ABC123) o Mercosur (AB123CD) y se normaliza a
+  mayúsculas (validar_dominio en constants/validations.py); el año se
+  valida entre 1900 y el año próximo (validar_anio_vehiculo). A propósito
+  sin client_id (dueño) todavía: mismo criterio que insurance_companies,
+  esa relación se define recién con el módulo de siniestros (ver VISIÓN A
+  FUTURO) en vez de acoplarla antes de tiempo.
 
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
 - Controles de permiso por módulo y no solo en gestión de usuarios: hoy
   cualquier rol logueado (incluido Asesor) puede crear/editar/borrar
-  sucursales, clientes, productos, marcas de vehículos y compañías de
-  seguro porque esos routes.py solo exigen login_required, sin pasar por
-  src/permissions.py. Falta decidir qué puede hacer cada rol en esos
-  módulos (ej: ¿un Asesor debería poder borrar una marca o una sucursal?)
-  y sumarlo a permissions.py como ya existe para usuarios
+  sucursales, clientes, productos, vehículos, marcas de vehículos y
+  compañías de seguro porque esos routes.py solo exigen login_required,
+  sin pasar por src/permissions.py. Falta decidir qué puede hacer cada
+  rol en esos módulos (ej: ¿un Asesor debería poder borrar una marca o
+  una sucursal?) y sumarlo a permissions.py como ya existe para usuarios
   (puede_gestionar_usuarios/puede_cambiar_password).
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
@@ -158,11 +168,12 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
       insurance_companies, falta el módulo que lo consuma).
     - El resto de los datos del siniestro (fecha, descripción, estado,
       etc.) todavía sin definir.
-- Tabla de vehículos: hoy vehicle_brands es solo el catálogo de marcas
-  (Toyota, Ford, etc.), no vehículos concretos. Falta una tabla de
-  vehículos reales (patente, marca -FK a vehicle_brands-, modelo, año,
-  dueño/cliente) para que el siniestro pueda referenciar "el Hilux de tal
-  cliente" y no repetir esos datos sueltos cada vez.
+- Tabla de vehículos: ya existe (src/modules/administrar/vehicles/), con
+  marca -FK a vehicle_brands-, modelo, año, dominio, color, número de
+  chasis y número de motor. Todavía sin dueño/cliente a propósito (ver
+  arriba); falta decidir esa relación cuando se diseñe el módulo de
+  siniestros, para que este último pueda referenciar "el Hilux de tal
+  cliente" sin repetir esos datos sueltos cada vez.
 
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)

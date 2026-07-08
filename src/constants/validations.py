@@ -7,6 +7,8 @@ _EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _DNI_REGEX = re.compile(r"^\d{7,8}$")
 _CUIT_REGEX = re.compile(r"^\d{11}$")
 _PHONE_REGEX = re.compile(r"^\+?\d{8,15}$")  # Formato E.164 (estándar ITU-T)
+_DOMINIO_VIEJO_REGEX = re.compile(r"^[A-Z]{3}\d{3}$")
+_DOMINIO_MERCOSUR_REGEX = re.compile(r"^[A-Z]{2}\d{3}[A-Z]{2}$")
 _FORMATO_FECHA = "%Y-%m-%d"
 
 _PASSWORD_MIN_LENGTH = 8
@@ -67,6 +69,30 @@ def validar_cuit(cuit):
         raise ValidationError("El CUIT no es válido: el dígito verificador no coincide.")
 
     return limpio
+
+
+def validar_dominio(dominio):
+    """Valida el dominio (patente) argentino: formato viejo (ABC123) o Mercosur
+    (AB123CD). Devuelve el dominio normalizado (mayúsculas, sin espacios ni guiones).
+    """
+    limpio = re.sub(r"[\s-]", "", dominio).upper()
+    if not _DOMINIO_VIEJO_REGEX.match(limpio) and not _DOMINIO_MERCOSUR_REGEX.match(limpio):
+        raise ValidationError("El dominio debe tener formato ABC123 (viejo) o AB123CD (Mercosur).")
+    return limpio
+
+
+def validar_anio_vehiculo(year):
+    """Valida que el año sea un entero entre 1900 y el año próximo (modelos que
+    salen a la venta con el año siguiente al calendario actual)."""
+    try:
+        year_int = int(year)
+    except (TypeError, ValueError):
+        raise ValidationError("El año debe ser un número.")
+
+    anio_maximo = date.today().year + 1
+    if year_int < 1900 or year_int > anio_maximo:
+        raise ValidationError(f"El año debe estar entre 1900 y {anio_maximo}.")
+    return year_int
 
 
 def validar_fecha(fecha_str):

@@ -36,6 +36,7 @@ AppPanacar/
     │   ├── branches/{listar,formulario,borrados}.html
     │   ├── clients/{listar,formulario,borrados}.html
     │   ├── products/{listar,formulario,borrados}.html
+    │   ├── vehicles/{listar,formulario,borrados}.html
     │   ├── validaciones/index.html      # Índice de "Validaciones" con los links a cada catálogo
     │   ├── vehicle_brands/{listar,formulario,borrados}.html
     │   └── insurance_companies/{listar,formulario,borrados}.html
@@ -59,6 +60,10 @@ AppPanacar/
             │   ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
             │   ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
             │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/user), restringido a Admin/BackOffice salvo login/logout
+            ├── vehicles/                # Módulo de vehículos concretos (no marcas: patente, modelo, año, etc.)
+            │   ├── db.py                 # Creación de la tabla vehicles (brand_id FK a vehicle_brands)
+            │   ├── logic.py              # CRUD, validación de dominio (patente) y año, borrado lógico
+            │   └── routes.py             # Blueprint 'vehicles': vistas HTTP (/vehicles), CRUD completo
             └── validaciones/            # Catálogos de referencia usados por otros módulos
                 ├── routes.py              # Blueprint 'validaciones': índice de la sección (/validaciones)
                 ├── vehicle_brands/        # Marcas de vehículos (FK desde product_compatibility)
@@ -74,6 +79,8 @@ AppPanacar/
 Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
 
 Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. La compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) ya referencia una marca cargada en el catálogo en vez de texto libre; la migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`). Compañías de seguro todavía no está enganchado a ningún otro módulo: la aseguradora va a ir asociada al futuro siniestro (cliente + vehículo + aseguradora), no al cliente directamente — ver RODO.txt.
+
+`vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 

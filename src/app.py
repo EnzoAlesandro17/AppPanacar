@@ -21,17 +21,20 @@ from src.modules.administrar.validaciones.insurance_companies.routes import insu
 from src.modules.administrar.validaciones.routes import validaciones_bp
 from src.modules.administrar.validaciones.vehicle_brands.db import crear_tabla as crear_tabla_vehicle_brands
 from src.modules.administrar.validaciones.vehicle_brands.routes import vehicle_brands_bp
+from src.modules.administrar.vehicles.db import crear_tabla as crear_tabla_vehicles
+from src.modules.administrar.vehicles.routes import vehicles_bp
 
 
 def _inicializar_tablas():
     # Orden importa: clients y products/compatibilidad tienen FK a estos catálogos;
-    # users tiene FK a branches.
+    # vehicles tiene FK a vehicle_brands; users tiene FK a branches.
     crear_tabla_vehicle_brands()
     crear_tabla_insurance_companies()
     crear_tabla_branches()
     crear_tabla_clients()
     crear_tabla_products()
     crear_tabla_compatibilidad()
+    crear_tabla_vehicles()
     crear_tabla_users()
 
 
@@ -55,6 +58,7 @@ def create_app():
     app.register_blueprint(validaciones_bp)
     app.register_blueprint(vehicle_brands_bp)
     app.register_blueprint(insurance_companies_bp)
+    app.register_blueprint(vehicles_bp)
 
     @app.route("/")
     def index():

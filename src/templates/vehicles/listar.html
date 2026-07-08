@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Vehículos</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('vehicles.nuevo') }}">+ Nuevo vehículo</a>
+    <a class="btn btn-secondary" href="{{ url_for('vehicles.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Dominio</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Año</th>
+            <th>Color</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vehiculo in vehiculos %}
+        <tr>
+            <td>{{ vehiculo['license_plate'] }}</td>
+            <td>{{ vehiculo['brand_name'] }}</td>
+            <td>{{ vehiculo['model'] }}</td>
+            <td>{{ vehiculo['year'] }}</td>
+            <td>{{ vehiculo['color'] or '—' }}</td>
+            <td>
+                <a href="{{ url_for('vehicles.editar', id_vehiculo=vehiculo['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('vehicles.borrar', id_vehiculo=vehiculo['id']) }}"
+                      onsubmit="return confirm('¿Borrar el vehículo {{ vehiculo['license_plate'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No hay vehículos cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
