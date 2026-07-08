@@ -3,3 +3,4 @@ data/
 __pycache__/
 .env
 CREDENCIALES_PRUEBA.txt
+.pytest_cache/

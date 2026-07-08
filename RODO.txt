@@ -118,6 +118,20 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   products y vehicles quedaron afuera a propósito: son listas que crecen
   mucho (no un catálogo chico) y no tiene sentido ordenarlas a mano, siguen
   por nombre/dominio.
+- Arrancó la suite de tests con pytest (tests/, pytest.ini con
+  testpaths = tests). tests/conftest.py define un fixture `app` que
+  parchea src.db.connection.DB_PATH a un archivo SQLite temporal
+  (tmp_path de pytest) antes de crear la app, así cada test arranca con
+  una base propia y vacía sin tocar nunca data/database.db; un fixture
+  `admin` crea un usuario Admin y lo loguea para los tests que necesitan
+  sesión. Cobertura inicial: constants/validations.py (CUIT con dígito
+  verificador, DNI, email, teléfono E.164, password, dominio, año),
+  breadcrumbs.migas(), login (mensaje genérico, bloqueo tras
+  MAX_LOGIN_ATTEMPTS, usuario borrado), y branches como módulo de
+  referencia del patrón CRUD + borrado lógico + reordenar_* que se repite
+  en los demás catálogos, incluido el endpoint HTTP /reordenar (aplica
+  el orden, exige CSRF por header y login). Falta sumar tests para el
+  resto de los módulos (ver QUÉ SEGUIRÍA HACIENDO).
 - vehicles (src/modules/administrar/vehicles/): tabla de vehículos
   concretos, primer paso hacia el módulo de siniestros. Marca (FK a
   vehicle_brands), modelo, año y dominio son obligatorios; color, número
@@ -171,7 +185,10 @@ QUÉ SEGUIRÍA HACIENDO
   SQLite local; con 2 sucursales y máquinas no siempre conectadas hay que
   decidir si cada sucursal tiene su propia DB y cómo se sincronizan, o si se
   apunta a un servidor central que a veces no es alcanzable.
-- Tests automatizados (pytest) en vez de scripts sueltos.
+- Seguir sumando tests de pytest a los módulos que todavía no tienen (arrancamos
+  con validations, breadcrumbs, login/bloqueo y branches+reorder como
+  referencia; faltan clients, products, vehicles, user CRUD completo,
+  vehicle_brands/insurance_companies/claim_statuses, permissions.py).
 - Seguir usando migraciones de esquema reales (ALTER TABLE) para columnas
   nuevas en vez de borrar la DB de dev — ya se hizo una vez (brand_vehicle
   -> brand_vehicle_id), falta que sea la norma y no la excepción.

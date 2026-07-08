@@ -4,9 +4,17 @@
 AppPanacar/
 ├── RODO.txt                        # Notas personales del desarrollo: qué se hizo, qué falta, decisiones e ideas a futuro
 ├── readme.md                       # Este archivo
-├── requirements.txt                 # Dependencias del proyecto (Flask, Flask-WTF)
+├── requirements.txt                 # Dependencias del proyecto (Flask, Flask-WTF, pytest)
+├── pytest.ini                        # testpaths = tests
 ├── app.py                           # Entrypoint: crea la app con create_app() y la corre (flask run / python app.py)
-├── .gitignore                       # Ignora .venv/, data/, __pycache__/ y .env
+├── .gitignore                       # Ignora .venv/, data/, __pycache__/, .pytest_cache/ y .env
+├── tests/
+│   ├── conftest.py                   # Fixtures: app/client con una SQLite temporal por test (aislada de data/database.db), extraer_csrf(), fixture admin logueado
+│   ├── test_validations.py           # Funciones puras de constants/validations.py (CUIT, DNI, email, teléfono, password, dominio, año)
+│   ├── test_breadcrumbs.py           # migas() de src/breadcrumbs.py
+│   ├── test_login.py                 # iniciar_sesion: credenciales, mensaje genérico, bloqueo tras MAX_LOGIN_ATTEMPTS, usuario borrado, y el flujo HTTP /user/login
+│   ├── test_branches.py              # CRUD + borrado lógico + reordenar_sucursales, como referencia del patrón repetido en los demás módulos
+│   └── test_reorder_http.py          # Endpoint POST /reordenar por HTTP: aplica el orden, exige CSRF (header) y login
 ├── data/
 │   └── database.db                  # Base de datos SQLite local con los datos (se crea/usa en runtime, ignorada por git)
 ├── .venv/                           # Entorno virtual de Python (ignorado por git)
@@ -101,6 +109,8 @@ Navegación: la pantalla principal (`/administrar`, título "Sistema de gestión
 El nav de todas las páginas (`base.html`) muestra un breadcrumb (ej. "Sistema de gestión / Administración / Validaciones / Marcas de vehículos") en vez de un botón fijo "Volver": cada tramo del camino es un link a ese nivel, salvo el último (la página actual). Cada blueprint arma su propio breadcrumb con un helper `_migas(*ultimos)` local en su `routes.py`, apoyado en `migas()` de `src/breadcrumbs.py`.
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
+
+Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test arranca con una base SQLite temporal propia (`tests/conftest.py` parchea `src.db.connection.DB_PATH` con un archivo en un directorio temporal antes de crear la app), así que nunca tocan `data/database.db`.
 
 ## Medidas de seguridad
 
