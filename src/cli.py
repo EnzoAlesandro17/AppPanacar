@@ -17,7 +17,7 @@ def registrar_comandos(app):
 def create_admin(name, last_name, dni, username, password):
     """Crea el primer usuario Admin (bootstrap), sin depender de la UI.
 
-    Necesario porque /user/nuevo ya exige estar logueado como Admin/Supervisor.
+    Necesario porque /user/nuevo ya exige estar logueado como Admin/BackOffice.
     """
     try:
         id_usuario = crear_usuario(

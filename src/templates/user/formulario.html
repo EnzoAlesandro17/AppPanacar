@@ -30,7 +30,7 @@
             {% endfor %}
         </select>
     </label>
-    <label>Usuario (para Admin/Supervisor; Vendedor entra solo con su nombre de usuario, sin contraseña)
+    <label>Usuario (opcional: si se carga, va junto con la contraseña)
         <input type="text" name="username" value="{{ usuario.username or '' if usuario else '' }}">
     </label>
     <label>Contraseña{{ ' (dejar vacío para no cambiarla)' if accion == 'editar' else '' }}

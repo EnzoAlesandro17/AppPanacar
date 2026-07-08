@@ -67,8 +67,8 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
 - Contraseñas de usuario hasheadas con pbkdf2_hmac + salt (nunca texto plano).
 - products: precio mayorista/minorista con validación cruzada, y stock que
   puede ser NULL para productos sin inventario físico.
-- users con role (Admin / Supervisor / Vendedor) y branch_id (FK a branches,
-  nullable). Vendedor es el rol que entra sin contraseña.
+- users con role (Admin / BackOffice / Asesor) y branch_id (FK a branches,
+  nullable). Los tres roles entran con usuario y contraseña por igual.
 - src/permissions.py centraliza qué rol puede hacer qué (gestión de
   usuarios, jerarquía de cambio de contraseñas).
 - src/session.py guarda el usuario logueado en memoria del proceso.
@@ -103,7 +103,7 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
   movimientos.
 - Mensajería entre sucursales tipo "archivos cifrados" para pedidos de
   actualización, conciliaciones o aprobaciones con descuento.
-- Posible 2FA (TOTP con pyotp) para el login de Admin/Supervisor más
+- Posible 2FA (TOTP con pyotp) para el login de Admin/BackOffice más
   adelante.
 
 

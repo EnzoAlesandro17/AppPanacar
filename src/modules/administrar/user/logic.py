@@ -1,7 +1,9 @@
 import hashlib
 import os
 import sqlite3
+from datetime import datetime, timedelta
 
+from src.constants.settings import Settings
 from src.constants.validations import (
     validar_campos_obligatorios,
     validar_dni,
@@ -18,7 +20,7 @@ from src.modules.administrar.user.db import TABLA
 
 _ITERACIONES_HASH = 100_000
 
-ROLES = ("Admin", "Supervisor", "Vendedor")
+ROLES = ("Admin", "BackOffice", "Asesor")
 
 
 def _hashear_contrasena(contrasena):
@@ -49,10 +51,7 @@ def _validar_datos(name, last_name, dni, username, password, email, birth_date, 
     if role not in ROLES:
         raise ValidationError(f"El rol debe ser uno de: {', '.join(ROLES)}.")
 
-    if role == "Vendedor":
-        if password:
-            raise ValidationError("Los vendedores no usan contraseña: entran solo con su usuario.")
-    elif bool(username) != bool(password):
+    if bool(username) != bool(password):
         raise ValidationError("Usuario y contraseña deben cargarse juntos, o dejarse los dos vacíos.")
 
     _validar_branch_id(branch_id)
@@ -81,7 +80,7 @@ def _traducir_error_integridad(error):
 
 
 def crear_usuario(name, last_name, dni, code=None, username=None, password=None,
-                   email=None, birth_date=None, phone=None, role="Vendedor", branch_id=None):
+                   email=None, birth_date=None, phone=None, role="Asesor", branch_id=None):
     """Valida y crea un usuario nuevo. Devuelve el id generado."""
     telefono_normalizado = _validar_datos(
         name, last_name, dni, username, password, email, birth_date, phone, role, branch_id
@@ -211,20 +210,62 @@ def verificar_contrasena(username, password):
     return _verificar_hash(password, usuario["password"])
 
 
+def _esta_bloqueado(usuario):
+    """True si la cuenta sigue bloqueada por intentos fallidos.
+
+    Si el bloqueo ya venció, limpia el contador y devuelve False.
+    """
+    if not usuario["locked_until"]:
+        return False
+    if datetime.now() < datetime.fromisoformat(usuario["locked_until"]):
+        return True
+    _resetear_intentos(usuario["id"])
+    return False
+
+
+def _registrar_intento_fallido(usuario):
+    intentos = usuario["failed_attempts"] + 1
+    locked_until = (
+        (datetime.now() + timedelta(seconds=Settings.TIMEOUT_SECONDS)).isoformat()
+        if intentos >= Settings.MAX_LOGIN_ATTEMPTS
+        else None
+    )
+    with obtener_conexion() as conexion:
+        conexion.execute(
+            f"UPDATE {TABLA} SET failed_attempts = ?, locked_until = ? WHERE id = ?",
+            (intentos, locked_until, usuario["id"]),
+        )
+        conexion.commit()
+
+
+def _resetear_intentos(id_usuario):
+    with obtener_conexion() as conexion:
+        conexion.execute(
+            f"UPDATE {TABLA} SET failed_attempts = 0, locked_until = NULL WHERE id = ?",
+            (id_usuario,),
+        )
+        conexion.commit()
+
+
 def iniciar_sesion(username, password):
     """Valida credenciales de login. Devuelve la fila del usuario si son correctas.
 
-    Los Vendedor entran solo con su usuario, sin contraseña.
     Mensaje de error genérico a propósito, para no filtrar si falló el
-    usuario o la contraseña.
+    usuario o la contraseña. Tras MAX_LOGIN_ATTEMPTS intentos fallidos
+    seguidos, la cuenta queda bloqueada por TIMEOUT_SECONDS.
     """
     usuario = obtener_por_username(username)
     if usuario is None or usuario["status"] == 0:
         raise ValidationError("Usuario o contraseña incorrectos.")
 
-    if usuario["role"] == "Vendedor":
-        return usuario
+    if _esta_bloqueado(usuario):
+        raise ValidationError(
+            "Cuenta bloqueada temporalmente por demasiados intentos fallidos. Probá de nuevo en unos segundos."
+        )
 
     if usuario["password"] is None or not _verificar_hash(password, usuario["password"]):
+        _registrar_intento_fallido(usuario)
         raise ValidationError("Usuario o contraseña incorrectos.")
+
+    _resetear_intentos(usuario["id"])
     return usuario

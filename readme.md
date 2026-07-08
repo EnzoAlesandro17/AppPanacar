@@ -20,7 +20,7 @@ AppPanacar/
     ├── auth.py                       # login_required: exige sesión activa (flask.session) para acceder a una vista
     ├── config.py                     # Rutas base del proyecto, ubicación de la base de datos (DB_PATH) y SECRET_KEY
     ├── exceptions.py                 # ValidationError: excepción usada en todo el backend para errores de validación de negocio
-    ├── permissions.py                # Reglas de qué rol (Admin/Supervisor/Vendedor) puede hacer qué acción, centralizadas
+    ├── permissions.py                # Reglas de qué rol (Admin/BackOffice/Asesor) puede hacer qué acción, centralizadas
     ├── constants/
     │   ├── settings.py                # Constantes generales: nombre y versión de la app, timeout, intentos máximos de login
     │   └── validations.py             # Validaciones genéricas reutilizables: email, teléfono, DNI, CUIT, fechas, edad mínima, campos obligatorios
@@ -66,8 +66,8 @@ Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, co
 
 - **Contraseñas hasheadas**: nunca se guarda texto plano. Se usa `pbkdf2_hmac` (SHA-256, 100.000 iteraciones) con salt aleatorio por usuario (`src/modules/administrar/user/logic.py`).
 - **Política de contraseñas**: largo mínimo 8 y máximo 64 caracteres, siguiendo NIST SP 800-63B (el estándar actual de la comunidad). Sin reglas de complejidad forzada (mayúscula/número/símbolo) a propósito: ese mismo estándar las desaconseja porque en la práctica producen contraseñas predecibles sin mejorar la seguridad real (`validar_password` en `src/constants/validations.py`).
-- **Login sin fuga de información**: si el usuario o la contraseña fallan, el mensaje de error es siempre el mismo genérico, para no revelar cuál de los dos estuvo mal. Se bloquea tras `MAX_LOGIN_ATTEMPTS` (3) intentos fallidos (`iniciar_sesion` en `user/logic.py`).
-- **Permisos por rol**: quién puede gestionar usuarios o cambiar contraseñas de quién está centralizado en `src/permissions.py`, con una jerarquía real (Admin > Supervisor > Vendedor) en vez de reglas sueltas repetidas por módulo.
+- **Login sin fuga de información**: si el usuario o la contraseña fallan, el mensaje de error es siempre el mismo genérico, para no revelar cuál de los dos estuvo mal. Tras `MAX_LOGIN_ATTEMPTS` (3) intentos fallidos seguidos, la cuenta se bloquea temporalmente por `TIMEOUT_SECONDS` (30 segundos) (`iniciar_sesion` en `user/logic.py`).
+- **Permisos por rol**: quién puede gestionar usuarios o cambiar contraseñas de quién está centralizado en `src/permissions.py`, con una jerarquía real (Admin > BackOffice > Asesor) en vez de reglas sueltas repetidas por módulo. Por ahora todos los roles acceden a todos los módulos salvo la gestión de usuarios (reservada a Admin/BackOffice); el resto de las restricciones por rol se irán sumando más adelante.
 - **Validación de documentos reales**: el CUIT valida su dígito verificador con el algoritmo módulo 11 (el mismo que usa AFIP), no solo la cantidad de dígitos — evita cargar CUITs inventados o mal tipeados (`validar_cuit`).
 - **Teléfonos en formato estándar**: se valida contra E.164 (estándar internacional ITU-T), en vez de un formato fijo hardcodeado a un solo país (`validar_telefono`).
 - **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado), así nunca se pierden datos de auditoría por error.
