@@ -2,6 +2,21 @@ from src.db.connection import obtener_conexion
 
 TABLA = "insurance_companies"
 
+# Carga inicial de compañías de seguro conocidas en Argentina. Se insertan
+# solo si no existen (ON CONFLICT DO NOTHING), así no duplica las que ya
+# estén cargadas ni pisa las que el usuario haya borrado o editado.
+_ASEGURADORAS_INICIALES = (
+    "La Caja", "Sancor Seguros", "Federación Patronal", "Mercantil Andina",
+    "Zurich Argentina", "Allianz Argentina", "Rivadavia Seguros",
+    "Provincia Seguros", "Sura Seguros Argentina", "QBE Seguros La Buenos Aires",
+    "Río Uruguay Seguros", "La Segunda", "Nación", "HDI Seguros Argentina",
+    "Chubb Seguros Argentina", "ATM Seguros", "Cardif Seguros Argentina",
+    "Orbis Seguros", "Meridional Seguros", "Triunfo Seguros",
+    "Instituto Asegurador Mercantil", "Boston Seguros", "Prevención Seguros",
+    "Copan Compañía de Seguros", "Caruso Compañía Argentina de Seguros",
+    "Segurcoop",
+)
+
 
 def crear_tabla():
     """Crea la tabla de compañías de seguro si no existe todavía."""
@@ -31,5 +46,14 @@ def crear_tabla():
                 ) + 1
                 """
             )
+
+        conexion.executemany(
+            f"""
+            INSERT INTO {TABLA} (name, sort_order)
+            VALUES (?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
+            ON CONFLICT(name) DO NOTHING
+            """,
+            [(nombre,) for nombre in _ASEGURADORAS_INICIALES],
+        )
 
         conexion.commit()

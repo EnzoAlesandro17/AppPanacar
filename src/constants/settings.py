@@ -1,5 +1,5 @@
 class Settings:
-    APP_NAME = "Panacar - Sistema Interno"
+    APP_NAME = "Taller San Antonio (Panacar S.R.L.)"
     VERSION = "1.0.0"
 
     # Configuraciones lógicas

@@ -51,7 +51,7 @@ header.barra .barra-inner {
     align-items: center;
 }
 
-header.barra span {
+header.barra .marca {
     font-weight: 600;
 }
 
@@ -63,6 +63,35 @@ header.barra a {
 
 header.barra a:hover {
     color: #fff;
+}
+
+.usuario-actual {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.usuario-actual .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.usuario-actual .usuario-info {
+    font-weight: 500;
+}
+
+.usuario-actual .usuario-info small {
+    color: #cbd5e1;
+    font-weight: 400;
 }
 
 nav.menu {

@@ -179,6 +179,32 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   página actual, sin link). Cada blueprint arma sus propias migas con un
   helper _migas(*ultimos) local en su routes.py que antepone el camino fijo
   hasta ese módulo.
+- Estética general: los <h1> de todas las páginas quedaron centrados, se
+  agregó un footer (nombre + versión de la app, y una línea de alcance/
+  ayuda) al final de cada página, y se sumó la <meta name="viewport"> que
+  faltaba en base.html — sin ella el celular renderizaba la página como si
+  fuera de escritorio y forzaba zoom; era la pieza puntual que hacía falta
+  para mobile (el resto del layout ya era responsive).
+- Settings.APP_NAME pasó de "Panacar - Sistema Interno" a "Taller San
+  Antonio (Panacar S.R.L.)": Taller San Antonio es el nombre comercial del
+  local, Panacar S.R.L. la razón social. Se ve en el header, el <title> y
+  el footer de todas las páginas.
+- Header rediseñado: a la izquierda solo el nombre de la app (antes tenía
+  pegado "— Hola, nombre (rol)" en el mismo texto). A la derecha, antes del
+  botón "Salir", un avatar circular con la inicial del nombre + "nombre
+  (rol)" (clase .usuario-actual en base.html/style.css). Por ahora es solo
+  visual; queda como el lugar pensado para el futuro menú de configuración
+  de la cuenta (cambiar contraseña, etc.) — todavía no tiene dropdown ni
+  nada clickeable más que "Salir".
+- Carga inicial de catálogos: vehicle_brands e insurance_companies suman
+  listas de marcas de vehículos y compañías de seguro conocidas en
+  Argentina (_MARCAS_INICIALES / _ASEGURADORAS_INICIALES en sus db.py).
+  Se insertan con INSERT ... ON CONFLICT(name) DO NOTHING en cada arranque
+  de la app, así es idempotente: no duplica lo que ya esté cargado (se
+  respetaron los nombres exactos que ya había, ej. "San Cristobal" sin
+  tilde y "Nación" sin "Seguros", para no crear una entrada casi duplicada
+  con otra ortografía) y funciona igual en una base nueva (deploy futuro)
+  que en la de desarrollo actual.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -209,6 +235,10 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
+- Menú de configuración de cuenta: el avatar + nombre del usuario en el
+  header (arriba a la derecha, al lado de "Salir") quedó preparado como
+  lugar para un futuro dropdown con cambiar contraseña, quizás preferencias
+  de usuario, etc. Hoy es solo texto/ícono, sin nada clickeable.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
