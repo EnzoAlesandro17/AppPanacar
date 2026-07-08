@@ -19,9 +19,14 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    background: var(--color-bg);
     color: var(--color-text);
     line-height: 1.5;
+    background-color: var(--color-bg);
+    background-image:
+        radial-gradient(ellipse 60% 40% at 12% 100%, rgba(37, 99, 235, .05), transparent 60%),
+        radial-gradient(ellipse 55% 35% at 88% 96%, rgba(37, 99, 235, .04), transparent 60%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 a {
@@ -66,12 +71,27 @@ header.barra a:hover {
 }
 
 .usuario-actual {
+    position: relative;
+}
+
+.usuario-boton {
     display: flex;
     align-items: center;
     gap: 10px;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    border-radius: var(--radius);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
 }
 
-.usuario-actual .avatar {
+.usuario-boton:hover {
+    background: rgba(255, 255, 255, .1);
+}
+
+.usuario-boton .avatar {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -85,13 +105,38 @@ header.barra a:hover {
     flex-shrink: 0;
 }
 
-.usuario-actual .usuario-info {
+.usuario-boton .usuario-info {
     font-weight: 500;
 }
 
-.usuario-actual .usuario-info small {
+.usuario-boton .usuario-info small {
     color: #cbd5e1;
     font-weight: 400;
+}
+
+.usuario-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    min-width: 140px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
+    overflow: hidden;
+    z-index: 20;
+}
+
+header.barra .usuario-dropdown a {
+    display: block;
+    padding: 10px 14px;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.usuario-dropdown a:hover {
+    background: var(--color-bg);
 }
 
 nav.menu {

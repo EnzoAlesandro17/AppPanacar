@@ -13,9 +13,13 @@
         <div class="barra-inner">
             <span class="marca">{{ app_name }}</span>
             <div class="usuario-actual">
-                <span class="avatar">{{ session['name'][0] | upper }}</span>
-                <span class="usuario-info">{{ session['name'] }} <small>({{ session['role'] }})</small></span>
-                <a href="{{ url_for('user.logout') }}">Salir</a>
+                <button type="button" class="usuario-boton" id="usuario-boton" aria-haspopup="true" aria-expanded="false">
+                    <span class="avatar">{{ session['name'][0] | upper }}</span>
+                    <span class="usuario-info">{{ session['name'] }} <small>({{ session['role'] }})</small></span>
+                </button>
+                <div class="usuario-dropdown" id="usuario-dropdown" hidden>
+                    <a href="{{ url_for('user.logout') }}">Salir</a>
+                </div>
             </div>
         </div>
     </header>
@@ -49,5 +53,6 @@
         <p>Sistema interno de uso exclusivo para el personal de Taller San Antonio. Ante dudas o problemas, contactá a administración.</p>
     </footer>
     <script src="{{ url_for('static', filename='js/reorder.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/menu-usuario.js') }}" defer></script>
 </body>
 </html>

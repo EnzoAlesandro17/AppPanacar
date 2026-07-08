@@ -205,6 +205,17 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   tilde y "Nación" sin "Seguros", para no crear una entrada casi duplicada
   con otra ortografía) y funciona igual en una base nueva (deploy futuro)
   que en la de desarrollo actual.
+- Fondo con detalle sutil (style.css, regla body): dos radial-gradient en
+  celeste muy tenues (opacidad .04-.05) ancladas abajo a los costados con
+  background-attachment: fixed, para que la pantalla no sea un gris plano
+  pero sin llamar la atención — a propósito casi imperceptible.
+- Menú de usuario: "Salir" dejó de ser un link suelto al lado del avatar y
+  pasó a vivir en un dropdown que se abre al clickear el botón con el
+  avatar + nombre (src/static/js/menu-usuario.js, el segundo JS del
+  proyecto además de reorder.js — mismo criterio: vanilla, sin
+  librerías). Se cierra clickeando afuera, con Escape, o clickeando el
+  mismo botón de nuevo. Pensado para sumarle más opciones más adelante
+  (cambiar contraseña, etc.), ver QUÉ SEGUIRÍA HACIENDO.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -235,10 +246,10 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
-- Menú de configuración de cuenta: el avatar + nombre del usuario en el
-  header (arriba a la derecha, al lado de "Salir") quedó preparado como
-  lugar para un futuro dropdown con cambiar contraseña, quizás preferencias
-  de usuario, etc. Hoy es solo texto/ícono, sin nada clickeable.
+- Sumar más opciones al menú de usuario además de "Salir" (cambiar
+  contraseña, quizás preferencias de usuario). El dropdown y el botón ya
+  existen (ver QUÉ HICIMOS), solo falta agregar los links adentro cuando
+  existan esas pantallas.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
