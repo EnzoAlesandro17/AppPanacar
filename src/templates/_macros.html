@@ -1,0 +1,15 @@
+{% macro campo_password(name, id, label, required=false) %}
+<label>{{ label }}
+    <div class="campo-password">
+        <input type="password" name="{{ name }}" id="{{ id }}" {{ 'required' if required else '' }}>
+        <button type="button" class="btn-mostrar-password" data-target="{{ id }}"
+                aria-label="Mostrar contraseña" aria-pressed="false">
+            <svg class="icono-ojo" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </button>
+    </div>
+</label>
+{% endmacro %}

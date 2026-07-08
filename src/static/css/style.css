@@ -412,12 +412,18 @@ tbody tr.arrastrando {
     border-radius: var(--radius);
     padding: 24px;
     max-width: 580px;
+    margin: 0 auto;
     box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
 }
 
 body.login-page .form-card {
     text-align: left;
     box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+}
+
+body.login-page .form-card button[type="submit"] {
+    display: block;
+    margin: 4px auto 0;
 }
 
 .form-card label {
@@ -446,6 +452,39 @@ body.login-page .form-card {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+.campo-password {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.campo-password input {
+    flex: 1;
+    margin-top: 0;
+}
+
+.btn-mostrar-password {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.btn-mostrar-password:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.icono-ojo {
+    flex-shrink: 0;
 }
 
 /* Pie de página */

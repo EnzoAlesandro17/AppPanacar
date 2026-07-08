@@ -85,3 +85,85 @@ def test_perfil_requiere_login(client):
 
     assert resp.status_code == 302
     assert resp.headers["Location"] == "/usuarios/login"
+
+
+def test_perfil_cambia_password_con_la_actual_correcta(asesor):
+    resp = asesor.get("/usuarios/perfil")
+    token = extraer_csrf(resp.data)
+
+    resp = asesor.post(
+        "/usuarios/perfil",
+        data={
+            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "password": "nueva-clave-999", "password_actual": "clave-segura-123",
+        },
+        follow_redirects=True,
+    )
+
+    assert b"Tus datos se actualizaron" in resp.data
+
+    from src.modules.administrar.user.logic import iniciar_sesion
+    usuario = iniciar_sesion("asesor_test", "nueva-clave-999")
+    assert usuario["username"] == "asesor_test"
+
+
+def test_perfil_rechaza_cambio_de_password_sin_la_actual(asesor):
+    resp = asesor.get("/usuarios/perfil")
+    token = extraer_csrf(resp.data)
+
+    resp = asesor.post(
+        "/usuarios/perfil",
+        data={
+            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "password": "nueva-clave-999",
+        },
+        follow_redirects=True,
+    )
+
+    assert b"contrase\xc3\xb1a actual no es correcta" in resp.data
+
+    from src.modules.administrar.user.logic import iniciar_sesion
+    # sigue funcionando con la contraseña vieja: el cambio no se aplicó
+    usuario = iniciar_sesion("asesor_test", "clave-segura-123")
+    assert usuario["username"] == "asesor_test"
+
+
+def test_perfil_rechaza_cambio_de_password_con_la_actual_incorrecta(asesor):
+    resp = asesor.get("/usuarios/perfil")
+    token = extraer_csrf(resp.data)
+
+    resp = asesor.post(
+        "/usuarios/perfil",
+        data={
+            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "password": "nueva-clave-999", "password_actual": "algo-incorrecto",
+        },
+        follow_redirects=True,
+    )
+
+    assert b"contrase\xc3\xb1a actual no es correcta" in resp.data
+
+
+def test_perfil_guarda_fecha_de_nacimiento_en_iso_desde_formato_visual(asesor):
+    resp = asesor.get("/usuarios/perfil")
+    token = extraer_csrf(resp.data)
+
+    asesor.post(
+        "/usuarios/perfil",
+        data={
+            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "birth_date": "15/03/1990",
+        },
+        follow_redirects=True,
+    )
+
+    from src.db.connection import obtener_conexion
+    with obtener_conexion() as conexion:
+        fila = conexion.execute(
+            "SELECT birth_date FROM users WHERE username = 'asesor_test'"
+        ).fetchone()
+
+    assert fila["birth_date"] == "1990-03-15"
+
+    resp = asesor.get("/usuarios/perfil")
+    assert b'value="15/03/1990"' in resp.data

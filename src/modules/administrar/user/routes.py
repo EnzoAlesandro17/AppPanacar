@@ -2,6 +2,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 
 from src.auth import login_required
 from src.breadcrumbs import migas
+from src.constants.validations import parsear_fecha_visual
 from src.exceptions import ValidationError
 from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.user.logic import (
@@ -14,6 +15,7 @@ from src.modules.administrar.user.logic import (
     obtener_por_id,
     reactivar_usuario,
     reordenar_usuarios,
+    verificar_contrasena,
 )
 from src.permissions import puede_gestionar_usuarios
 
@@ -38,6 +40,11 @@ def _requiere_gestion_usuarios():
     return None
 
 
+def _fecha_nacimiento_del_form():
+    cadena = request.form.get("birth_date", "").strip()
+    return parsear_fecha_visual(cadena) if cadena else None
+
+
 def _datos_del_form():
     branch_id = request.form.get("branch_id", "").strip()
     return {
@@ -47,7 +54,7 @@ def _datos_del_form():
         "code": request.form.get("code", "").strip() or None,
         "username": request.form.get("username", "").strip() or None,
         "email": request.form.get("email", "").strip() or None,
-        "birth_date": request.form.get("birth_date", "").strip() or None,
+        "birth_date": _fecha_nacimiento_del_form(),
         "phone": request.form.get("phone", "").strip() or None,
         "role": request.form.get("role", "").strip(),
         "branch_id": int(branch_id) if branch_id else None,
@@ -67,7 +74,7 @@ def _datos_del_form_perfil():
         "code": request.form.get("code", "").strip() or None,
         "username": request.form.get("username", "").strip() or None,
         "email": request.form.get("email", "").strip() or None,
-        "birth_date": request.form.get("birth_date", "").strip() or None,
+        "birth_date": _fecha_nacimiento_del_form(),
         "phone": request.form.get("phone", "").strip() or None,
     }
 
@@ -114,15 +121,15 @@ def nuevo():
     sucursales = listar_sucursales()
 
     if request.method == "POST":
-        datos = _datos_del_form()
         password = request.form.get("password", "").strip() or None
         try:
+            datos = _datos_del_form()
             crear_usuario(password=password, **datos)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "user/formulario.html", usuario=datos, accion="nueva", roles=ROLES, sucursales=sucursales,
-                migas=_migas("Nuevo usuario"),
+                "user/formulario.html", usuario=dict(request.form), accion="nueva", roles=ROLES,
+                sucursales=sucursales, migas=_migas("Nuevo usuario"),
             )
         flash("Usuario creado.", "success")
         return redirect(url_for("user.listar"))
@@ -148,16 +155,16 @@ def editar(id_usuario):
     sucursales = listar_sucursales()
 
     if request.method == "POST":
-        datos = _datos_del_form()
         password = request.form.get("password", "").strip() or None
         quitar_branch_id = not request.form.get("branch_id", "").strip()
         try:
+            datos = _datos_del_form()
             actualizar_usuario(id_usuario, password=password, quitar_branch_id=quitar_branch_id, **datos)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
                 "user/formulario.html",
-                usuario={**datos, "id": id_usuario},
+                usuario={**dict(request.form), "id": id_usuario},
                 accion="editar",
                 roles=ROLES,
                 sucursales=sucursales,
@@ -244,15 +251,19 @@ def perfil():
         return redirect(url_for("user.logout"))
 
     if request.method == "POST":
-        datos = _datos_del_form_perfil()
-        password = request.form.get("password", "").strip() or None
+        password_nueva = request.form.get("password", "").strip() or None
+        password_actual = request.form.get("password_actual", "").strip() or None
         try:
-            actualizar_usuario(session["user_id"], password=password, **datos)
+            datos = _datos_del_form_perfil()
+            if password_nueva:
+                if not password_actual or not verificar_contrasena(usuario["username"], password_actual):
+                    raise ValidationError("La contraseña actual no es correcta.")
+            actualizar_usuario(session["user_id"], password=password_nueva, **datos)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
                 "user/formulario.html",
-                usuario={**datos, "id": session["user_id"]},
+                usuario={**dict(request.form), "id": session["user_id"]},
                 accion="perfil",
                 migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
             )

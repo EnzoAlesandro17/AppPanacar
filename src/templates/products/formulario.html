@@ -55,7 +55,8 @@
         <input type="number" name="stock" min="0" step="1" value="{{ producto.stock if producto and producto.stock is not none else '' }}">
     </label>
     <label>Fecha de compra
-        <input type="date" name="purchase_date" value="{{ producto.purchase_date or '' if producto else '' }}">
+        <input type="text" name="purchase_date" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}"
+               value="{{ (producto.purchase_date | fecha_visual) if producto else '' }}">
     </label>
     <label>Precio de compra
         <input type="number" name="purchase_price" min="0" step="0.01" value="{{ producto.purchase_price if producto and producto.purchase_price is not none else '' }}">

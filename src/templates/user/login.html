@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import campo_password %}
 
 {% block body_class %}login-page{% endblock %}
 
@@ -10,9 +11,7 @@
     <label>Usuario
         <input type="text" name="username" required autofocus>
     </label>
-    <label>Contraseña
-        <input type="password" name="password" required>
-    </label>
+    {{ campo_password('password', 'password-login', 'Contraseña', required=true) }}
     <button type="submit" class="btn btn-primary">Entrar</button>
 </form>
 {% endblock %}

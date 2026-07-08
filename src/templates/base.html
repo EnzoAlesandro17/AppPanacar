@@ -18,7 +18,8 @@
                     <span class="usuario-info">{{ session['name'] }} <small>({{ session['role'] }})</small></span>
                 </button>
                 <div class="usuario-dropdown" id="usuario-dropdown" hidden>
-                    <a href="{{ url_for('user.perfil') }}">Configurar cuenta</a>
+                    <a href="{{ url_for('user.perfil') }}">Mi cuenta</a>
+                    <a href="{{ url_for('configuracion.index') }}">Configuración</a>
                     <a href="{{ url_for('user.logout') }}" class="usuario-dropdown-salir">Salir</a>
                 </div>
             </div>
@@ -55,5 +56,6 @@
     </footer>
     <script src="{{ url_for('static', filename='js/reorder.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/menu-usuario.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/mostrar-password.js') }}" defer></script>
 </body>
 </html>

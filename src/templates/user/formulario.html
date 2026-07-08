@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import campo_password %}
 
 {% block content %}
 <h1>{{ 'Mi cuenta' if accion == 'perfil' else ('Editar usuario' if accion == 'editar' else 'Nuevo usuario') }}</h1>
@@ -36,14 +37,16 @@
     <label>Usuario (opcional: si se carga, va junto con la contraseña)
         <input type="text" name="username" value="{{ usuario.username or '' if usuario else '' }}">
     </label>
-    <label>Contraseña{{ ' (dejar vacío para no cambiarla)' if accion in ('editar', 'perfil') else '' }}
-        <input type="password" name="password">
-    </label>
+    {% if accion == 'perfil' %}
+    {{ campo_password('password_actual', 'campo-password-actual', 'Contraseña actual (solo para cambiar la contraseña)') }}
+    {% endif %}
+    {{ campo_password('password', 'campo-password-nueva', 'Contraseña' + (' (dejar vacío para no cambiarla)' if accion in ('editar', 'perfil') else '')) }}
     <label>Email
         <input type="email" name="email" value="{{ usuario.email or '' if usuario else '' }}">
     </label>
     <label>Fecha de nacimiento
-        <input type="date" name="birth_date" value="{{ usuario.birth_date or '' if usuario else '' }}">
+        <input type="text" name="birth_date" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}"
+               value="{{ (usuario.birth_date | fecha_visual) if usuario else '' }}">
     </label>
     <label>Teléfono
         <input type="text" name="phone" value="{{ usuario.phone or '' if usuario else '' }}">

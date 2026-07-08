@@ -4,11 +4,13 @@ from flask_wtf import CSRFProtect
 from src.cli import registrar_comandos
 from src.config import SECRET_KEY
 from src.constants.settings import Settings
+from src.constants.validations import formatear_fecha_visual
 from src.modules.administrar.administracion.routes import administracion_bp
 from src.modules.administrar.branches.db import crear_tabla as crear_tabla_branches
 from src.modules.administrar.branches.routes import branches_bp
 from src.modules.administrar.clients.db import crear_tabla as crear_tabla_clients
 from src.modules.administrar.clients.routes import clients_bp
+from src.modules.administrar.configuracion.routes import configuracion_bp
 from src.modules.administrar.products.db import crear_tabla as crear_tabla_products
 from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
@@ -52,6 +54,8 @@ def create_app():
     def inyectar_app_name():
         return {"app_name": Settings.APP_NAME, "app_version": Settings.VERSION}
 
+    app.jinja_env.filters["fecha_visual"] = formatear_fecha_visual
+
     _inicializar_tablas()
     registrar_comandos(app)
 
@@ -67,5 +71,6 @@ def create_app():
     app.register_blueprint(claim_statuses_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(siniestros_bp)
+    app.register_blueprint(configuracion_bp)
 
     return app

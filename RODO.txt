@@ -233,6 +233,50 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   propósito: cuando se implementen permisos por módulo (ítem siguiente) y
   Administración quede bloqueada para Asesor, /perfil tiene que seguir
   siendo alcanzable igual.
+- Botón para mostrar/ocultar contraseña, con un ícono de ojo (abierto/
+  cerrado) que cambia in-place en vez de mostrar dos íconos o cambiar de
+  ancho con un texto "Mostrar"/"Ocultar" (primer intento, quedaba feo:
+  el botón cambiaba de tamaño según el texto). Un solo <svg> cuyo
+  contenido interno se reemplaza por innerHTML al clickear
+  (src/static/js/mostrar-password.js, tercer JS del proyecto). El campo +
+  botón se armó como macro de Jinja (src/templates/_macros.html,
+  campo_password) para no repetir el mismo bloque de HTML/SVG en cada
+  formulario con contraseña: se usa en login.html y en user/formulario.html
+  (tanto la contraseña nueva como, para accion="perfil", la contraseña
+  actual).
+- Fechas en formato argentino dd/mm/aaaa en los formularios (nacimiento en
+  usuarios, compra en stock). Antes eran <input type="date">, que respeta
+  el idioma/región del navegador (no el lang="es" de la página), así que
+  en la práctica podían mostrarse como mm/dd/yyyy según el navegador de
+  quien lo abriera. Se reemplazó por <input type="text" pattern="\d{2}/
+  \d{2}/\d{4}">, y la conversión hacia/desde el aaaa-mm-dd que se guarda
+  en la base corre en el backend: parsear_fecha_visual (dd/mm/aaaa -> ISO,
+  se usa al recibir el form) y formatear_fecha_visual (ISO -> dd/mm/aaaa,
+  registrada como filtro de Jinja "fecha_visual" para mostrar el valor
+  guardado) en constants/validations.py. validar_fecha y
+  validar_mayor_edad no se tocaron: siguen recibiendo ISO como siempre,
+  ahora ya convertido antes de llegar a logic.py. Hubo que mover
+  _datos_del_form()/_datos_del_form_perfil() (user) adentro del try en
+  nuevo()/editar()/perfil(), mismo patrón que products.py ya usaba para
+  _parsear_numero, porque ahora también pueden lanzar ValidationError por
+  una fecha con formato inválido.
+- Autogestión de cuenta ("Mi cuenta"): cambiar la propia contraseña ahora
+  exige la contraseña actual (nuevo campo password_actual, verificado con
+  verificar_contrasena en user/logic.py, que ya existía sin usar). Si no
+  la manda o no coincide, ValidationError antes de tocar la base — no
+  aplica ningún otro cambio del formulario tampoco. La edición admin
+  (/usuarios/<id>/editar) sigue sin pedirla: ahí el que cambia la
+  contraseña es Admin/BackOffice, no el dueño de la cuenta.
+- El dropdown de usuario (antes solo "Salir", después "Configurar cuenta"
+  + "Salir") ahora tiene tres opciones: "Mi cuenta" (renombrado desde
+  "Configurar cuenta", mismo /usuarios/perfil), "Configuración" (nuevo,
+  placeholder: /configuracion, blueprint configuracion_bp, mismo patrón
+  que siniestros — página vacía "Todavía no hay nada acá", sin diseñar
+  qué va a tener) y "Salir".
+- Los .form-card (formularios de alta/edición) quedan centrados
+  horizontalmente en la pantalla (margin: 0 auto en style.css). Antes
+  quedaban pegados a la izquierda dentro del <main> de 900px porque solo
+  tenían max-width sin margin auto.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -268,10 +312,9 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
-- Sumar más opciones al dropdown de usuario además de "Configurar cuenta"
-  y "Salir" (cambiar contraseña ya se puede desde "Configurar cuenta", ese
-  campo es parte del formulario compartido). Preferencias de usuario u
-  otras pantallas de cuenta, cuando haga falta.
+- Diseñar qué va adentro de "Configuración" (/configuracion, placeholder
+  vacío por ahora). Preferencias de usuario, configuración del sistema,
+  todavía sin definir qué.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)

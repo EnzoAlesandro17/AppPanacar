@@ -103,6 +103,34 @@ def validar_fecha(fecha_str):
         raise ValidationError("La fecha debe tener formato AAAA-MM-DD y ser una fecha válida.")
 
 
+_FORMATO_FECHA_VISUAL = "%d/%m/%Y"
+
+
+def parsear_fecha_visual(cadena):
+    """Convierte una fecha ingresada en formato argentino (dd/mm/aaaa) al
+    formato ISO (aaaa-mm-dd) que se guarda en la base. `validar_fecha` y
+    `validar_mayor_edad` siguen trabajando en ISO; esta función es la que
+    traduce lo que tipea el usuario antes de llegar ahí."""
+    try:
+        fecha = datetime.strptime(cadena, _FORMATO_FECHA_VISUAL).date()
+    except (ValueError, TypeError):
+        raise ValidationError("La fecha debe tener formato dd/mm/aaaa y ser una fecha válida.")
+    return fecha.strftime(_FORMATO_FECHA)
+
+
+def formatear_fecha_visual(fecha_iso):
+    """Convierte una fecha guardada en ISO (aaaa-mm-dd) a formato argentino
+    (dd/mm/aaaa) para mostrarla en los formularios. Si no es una fecha ISO
+    válida (ej. viene de un reintento con lo que el usuario ya había
+    tipeado), la devuelve sin tocar."""
+    if not fecha_iso:
+        return ""
+    try:
+        return datetime.strptime(fecha_iso, _FORMATO_FECHA).strftime(_FORMATO_FECHA_VISUAL)
+    except ValueError:
+        return fecha_iso
+
+
 def validar_mayor_edad(fecha_nacimiento, edad_minima=18):
     """Recibe un date (ver validar_fecha) y valida una edad mínima."""
     hoy = date.today()

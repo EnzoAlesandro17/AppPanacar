@@ -2,6 +2,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
 from src.breadcrumbs import migas
+from src.constants.validations import parsear_fecha_visual
 from src.exceptions import ValidationError
 from src.modules.administrar.products.logic import (
     CONDITIONS,
@@ -55,7 +56,10 @@ def _datos_del_form():
         "condition": request.form.get("condition", "").strip() or None,
         "supplier": request.form.get("supplier", "").strip() or None,
         "location": request.form.get("location", "").strip() or None,
-        "purchase_date": request.form.get("purchase_date", "").strip() or None,
+        "purchase_date": (
+            parsear_fecha_visual(request.form.get("purchase_date", "").strip())
+            if request.form.get("purchase_date", "").strip() else None
+        ),
         "purchase_price": _parsear_numero(request.form.get("purchase_price", ""), "purchase_price", float),
     }
 
