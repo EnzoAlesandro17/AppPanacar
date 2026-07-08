@@ -21,6 +21,7 @@ AppPanacar/
     ├── config.py                     # Rutas base del proyecto, ubicación de la base de datos (DB_PATH) y SECRET_KEY
     ├── exceptions.py                 # ValidationError: excepción usada en todo el backend para errores de validación de negocio
     ├── permissions.py                # Reglas de qué rol (Admin/BackOffice/Asesor) puede hacer qué acción, centralizadas
+    ├── breadcrumbs.py                 # migas(): arma la lista (etiqueta, endpoint) que pinta el breadcrumb de navegación en base.html
     ├── constants/
     │   ├── settings.py                # Constantes generales: nombre y versión de la app, timeout, intentos máximos de login
     │   └── validations.py             # Validaciones genéricas reutilizables: email, teléfono, DNI, CUIT, fechas, edad mínima, campos obligatorios
@@ -30,12 +31,14 @@ AppPanacar/
     ├── static/
     │   └── css/style.css              # Estilos mínimos compartidos por todas las páginas
     ├── templates/
-    │   ├── base.html                  # Layout común: header con usuario logueado, nav, mensajes flash
-    │   ├── administrar/index.html      # Índice de "Administrar" con los links a cada módulo
+    │   ├── base.html                  # Layout común: header con usuario logueado, nav con breadcrumb, mensajes flash
+    │   ├── administrar/index.html      # Pantalla principal "Sistema de gestión": Administración, Siniestros, Clientes, Vehículos, Stock
+    │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Usuarios y Validaciones
+    │   ├── siniestros/index.html         # Placeholder de "Siniestros" (módulo todavía sin diseñar, ver RODO.txt)
     │   ├── user/{login,listar,formulario,borrados}.html
     │   ├── branches/{listar,formulario,borrados}.html
     │   ├── clients/{listar,formulario,borrados}.html
-    │   ├── products/{listar,formulario,borrados}.html
+    │   ├── products/{listar,formulario,borrados}.html    # Tile/breadcrumb dice "Stock"; los templates y rutas internas siguen llamándose products
     │   ├── vehicles/{listar,formulario,borrados}.html
     │   ├── validaciones/index.html      # Índice de "Validaciones" con los links a cada catálogo
     │   ├── vehicle_brands/{listar,formulario,borrados}.html
@@ -43,7 +46,10 @@ AppPanacar/
     └── modules/
         └── administrar/
             ├── __init__.py
-            ├── routes.py               # Blueprint 'administrar': índice de la sección (/administrar)
+            ├── routes.py               # Blueprint 'administrar': pantalla principal "Sistema de gestión" (/administrar)
+            ├── administracion/          # Índice de "Administración" (agrupa sucursales/usuarios/validaciones)
+            │   ├── __init__.py
+            │   └── routes.py             # Blueprint 'administracion': índice de la sección (/administracion)
             ├── branches/               # Módulo de sucursales
             │   ├── db.py                 # Creación de la tabla branches
             │   ├── logic.py              # CRUD y validaciones de sucursales (alta, edición, borrado lógico, búsqueda)
@@ -81,6 +87,10 @@ Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkin
 Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. La compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) ya referencia una marca cargada en el catálogo en vez de texto libre; la migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`). Compañías de seguro todavía no está enganchado a ningún otro módulo: la aseguradora va a ir asociada al futuro siniestro (cliente + vehículo + aseguradora), no al cliente directamente — ver RODO.txt.
 
 `vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
+
+Navegación: la pantalla principal (`/administrar`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios y Validaciones), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes**, **Vehículos** y **Stock** (el módulo `products` por dentro; el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb).
+
+El nav de todas las páginas (`base.html`) muestra un breadcrumb (ej. "Sistema de gestión / Administración / Validaciones / Marcas de vehículos") en vez de un botón fijo "Volver": cada tramo del camino es un link a ese nivel, salvo el último (la página actual). Cada blueprint arma su propio breadcrumb con un helper `_migas(*ultimos)` local en su `routes.py`, apoyado en `migas()` de `src/breadcrumbs.py`.
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 

@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.user.logic import (
@@ -16,6 +17,16 @@ from src.modules.administrar.user.logic import (
 from src.permissions import puede_gestionar_usuarios
 
 user_bp = Blueprint("user", __name__, url_prefix="/user")
+
+
+def _migas(*ultimos):
+    piezas = [
+        ("Sistema de gestión", "administrar.index"),
+        ("Administración", "administracion.index"),
+    ]
+    piezas.append(("Usuarios", "user.listar") if ultimos else "Usuarios")
+    piezas.extend(ultimos)
+    return migas(*piezas)
 
 
 def _requiere_gestion_usuarios():
@@ -71,7 +82,7 @@ def logout():
 @login_required
 def listar():
     usuarios = listar_usuarios()
-    return render_template("user/listar.html", usuarios=usuarios)
+    return render_template("user/listar.html", usuarios=usuarios, migas=_migas())
 
 
 @user_bp.route("/nuevo", methods=["GET", "POST"])
@@ -91,13 +102,15 @@ def nuevo():
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "user/formulario.html", usuario=datos, accion="nueva", roles=ROLES, sucursales=sucursales
+                "user/formulario.html", usuario=datos, accion="nueva", roles=ROLES, sucursales=sucursales,
+                migas=_migas("Nuevo usuario"),
             )
         flash("Usuario creado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
-        "user/formulario.html", usuario=None, accion="nueva", roles=ROLES, sucursales=sucursales
+        "user/formulario.html", usuario=None, accion="nueva", roles=ROLES, sucursales=sucursales,
+        migas=_migas("Nuevo usuario"),
     )
 
 
@@ -129,12 +142,14 @@ def editar(id_usuario):
                 accion="editar",
                 roles=ROLES,
                 sucursales=sucursales,
+                migas=_migas("Editar usuario"),
             )
         flash("Usuario actualizado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
-        "user/formulario.html", usuario=dict(usuario), accion="editar", roles=ROLES, sucursales=sucursales
+        "user/formulario.html", usuario=dict(usuario), accion="editar", roles=ROLES, sucursales=sucursales,
+        migas=_migas("Editar usuario"),
     )
 
 
@@ -166,7 +181,7 @@ def borrados():
         return redireccion
 
     usuarios = [u for u in listar_usuarios(incluir_borrados=True) if u["status"] == 0]
-    return render_template("user/borrados.html", usuarios=usuarios)
+    return render_template("user/borrados.html", usuarios=usuarios, migas=_migas("Borrados"))
 
 
 @user_bp.route("/<int:id_usuario>/reactivar", methods=["POST"])

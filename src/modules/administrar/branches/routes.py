@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.branches.logic import (
     actualizar_sucursal,
@@ -12,6 +13,13 @@ from src.modules.administrar.branches.logic import (
 )
 
 branches_bp = Blueprint("branches", __name__, url_prefix="/branches")
+
+
+def _migas(*ultimos):
+    piezas = [("Sistema de gestión", "administrar.index"), ("Administración", "administracion.index")]
+    piezas.append(("Sucursales", "branches.listar") if ultimos else "Sucursales")
+    piezas.extend(ultimos)
+    return migas(*piezas)
 
 
 def _datos_del_form():
@@ -30,7 +38,7 @@ def _datos_del_form():
 @login_required
 def listar():
     sucursales = listar_sucursales()
-    return render_template("branches/listar.html", sucursales=sucursales)
+    return render_template("branches/listar.html", sucursales=sucursales, migas=_migas())
 
 
 @branches_bp.route("/nuevo", methods=["GET", "POST"])
@@ -42,11 +50,15 @@ def nuevo():
             crear_sucursal(**datos)
         except ValidationError as error:
             flash(str(error), "error")
-            return render_template("branches/formulario.html", sucursal=datos, accion="nueva")
+            return render_template(
+                "branches/formulario.html", sucursal=datos, accion="nueva", migas=_migas("Nueva sucursal")
+            )
         flash("Sucursal creada.", "success")
         return redirect(url_for("branches.listar"))
 
-    return render_template("branches/formulario.html", sucursal=None, accion="nueva")
+    return render_template(
+        "branches/formulario.html", sucursal=None, accion="nueva", migas=_migas("Nueva sucursal")
+    )
 
 
 @branches_bp.route("/<int:id_sucursal>/editar", methods=["GET", "POST"])
@@ -64,12 +76,16 @@ def editar(id_sucursal):
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "branches/formulario.html", sucursal={**datos, "id": id_sucursal}, accion="editar"
+                "branches/formulario.html", sucursal={**datos, "id": id_sucursal}, accion="editar",
+                migas=_migas("Editar sucursal"),
             )
         flash("Sucursal actualizada.", "success")
         return redirect(url_for("branches.listar"))
 
-    return render_template("branches/formulario.html", sucursal=dict(sucursal), accion="editar")
+    return render_template(
+        "branches/formulario.html", sucursal=dict(sucursal), accion="editar",
+        migas=_migas("Editar sucursal"),
+    )
 
 
 @branches_bp.route("/<int:id_sucursal>/borrar", methods=["POST"])
@@ -88,7 +104,7 @@ def borrar(id_sucursal):
 @login_required
 def borrados():
     sucursales = [s for s in listar_sucursales(incluir_borrados=True) if s["status"] == 0]
-    return render_template("branches/borrados.html", sucursales=sucursales)
+    return render_template("branches/borrados.html", sucursales=sucursales, migas=_migas("Borrados"))
 
 
 @branches_bp.route("/<int:id_sucursal>/reactivar", methods=["POST"])

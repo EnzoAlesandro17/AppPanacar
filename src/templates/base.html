@@ -14,8 +14,12 @@
         </div>
     </header>
     <nav class="menu">
-        <div class="menu-inner">
-            <a href="{{ url_for('administrar.index') }}">Volver</a>
+        <div class="menu-inner migas">
+            {% set migas = migas if migas is defined else [('Sistema de gestión', 'administrar.index')] %}
+            {% for etiqueta, endpoint in migas %}
+                {% if not loop.first %}<span class="miga-separador">/</span>{% endif %}
+                {% if endpoint %}<a href="{{ url_for(endpoint) }}">{{ etiqueta }}</a>{% else %}<span class="miga-actual">{{ etiqueta }}</span>{% endif %}
+            {% endfor %}
         </div>
     </nav>
     {% endif %}

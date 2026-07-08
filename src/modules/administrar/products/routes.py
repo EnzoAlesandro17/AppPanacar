@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.products.logic import (
     CONDITIONS,
@@ -19,6 +20,13 @@ from src.modules.administrar.products.logic import (
 from src.modules.administrar.validaciones.vehicle_brands.logic import listar_marcas
 
 products_bp = Blueprint("products", __name__, url_prefix="/products")
+
+
+def _migas(*ultimos):
+    piezas = [("Sistema de gestión", "administrar.index")]
+    piezas.append(("Stock", "products.listar") if ultimos else "Stock")
+    piezas.extend(ultimos)
+    return migas(*piezas)
 
 
 def _parsear_numero(valor, campo, tipo):
@@ -56,7 +64,7 @@ def _datos_del_form():
 @login_required
 def listar():
     productos = listar_productos()
-    return render_template("products/listar.html", productos=productos)
+    return render_template("products/listar.html", productos=productos, migas=_migas())
 
 
 @products_bp.route("/nuevo", methods=["GET", "POST"])
@@ -71,6 +79,7 @@ def nuevo():
             return render_template(
                 "products/formulario.html", producto=dict(request.form), accion="nueva",
                 product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+                migas=_migas("Nuevo producto"),
             )
         flash("Producto creado.", "success")
         return redirect(url_for("products.editar", id_producto=id_producto))
@@ -78,6 +87,7 @@ def nuevo():
     return render_template(
         "products/formulario.html", producto=None, accion="nueva",
         product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+        migas=_migas("Nuevo producto"),
     )
 
 
@@ -100,6 +110,7 @@ def editar(id_producto):
                 product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
                 compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
                 marcas=listar_marcas(),
+                migas=_migas("Editar producto"),
             )
         flash("Producto actualizado.", "success")
         return redirect(url_for("products.editar", id_producto=id_producto))
@@ -109,6 +120,7 @@ def editar(id_producto):
         product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
         compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
         marcas=listar_marcas(),
+        migas=_migas("Editar producto"),
     )
 
 
@@ -128,7 +140,7 @@ def borrar(id_producto):
 @login_required
 def borrados():
     productos = [p for p in listar_productos(incluir_borrados=True) if p["status"] == 0]
-    return render_template("products/borrados.html", productos=productos)
+    return render_template("products/borrados.html", productos=productos, migas=_migas("Borrados"))
 
 
 @products_bp.route("/<int:id_producto>/reactivar", methods=["POST"])

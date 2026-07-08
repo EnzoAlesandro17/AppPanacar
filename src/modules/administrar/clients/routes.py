@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.clients.logic import (
     actualizar_cliente,
@@ -12,6 +13,13 @@ from src.modules.administrar.clients.logic import (
 )
 
 clients_bp = Blueprint("clients", __name__, url_prefix="/clients")
+
+
+def _migas(*ultimos):
+    piezas = [("Sistema de gestión", "administrar.index")]
+    piezas.append(("Clientes", "clients.listar") if ultimos else "Clientes")
+    piezas.extend(ultimos)
+    return migas(*piezas)
 
 
 def _datos_del_form():
@@ -28,7 +36,7 @@ def _datos_del_form():
 @login_required
 def listar():
     clientes = listar_clientes()
-    return render_template("clients/listar.html", clientes=clientes)
+    return render_template("clients/listar.html", clientes=clientes, migas=_migas())
 
 
 @clients_bp.route("/nuevo", methods=["GET", "POST"])
@@ -40,11 +48,15 @@ def nuevo():
             crear_cliente(**datos)
         except ValidationError as error:
             flash(str(error), "error")
-            return render_template("clients/formulario.html", cliente=datos, accion="nueva")
+            return render_template(
+                "clients/formulario.html", cliente=datos, accion="nueva", migas=_migas("Nuevo cliente")
+            )
         flash("Cliente creado.", "success")
         return redirect(url_for("clients.listar"))
 
-    return render_template("clients/formulario.html", cliente=None, accion="nueva")
+    return render_template(
+        "clients/formulario.html", cliente=None, accion="nueva", migas=_migas("Nuevo cliente")
+    )
 
 
 @clients_bp.route("/<int:id_cliente>/editar", methods=["GET", "POST"])
@@ -62,12 +74,16 @@ def editar(id_cliente):
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "clients/formulario.html", cliente={**datos, "id": id_cliente}, accion="editar"
+                "clients/formulario.html", cliente={**datos, "id": id_cliente}, accion="editar",
+                migas=_migas("Editar cliente"),
             )
         flash("Cliente actualizado.", "success")
         return redirect(url_for("clients.listar"))
 
-    return render_template("clients/formulario.html", cliente=dict(cliente), accion="editar")
+    return render_template(
+        "clients/formulario.html", cliente=dict(cliente), accion="editar",
+        migas=_migas("Editar cliente"),
+    )
 
 
 @clients_bp.route("/<int:id_cliente>/borrar", methods=["POST"])
@@ -86,7 +102,7 @@ def borrar(id_cliente):
 @login_required
 def borrados():
     clientes = [c for c in listar_clientes(incluir_borrados=True) if c["status"] == 0]
-    return render_template("clients/borrados.html", clientes=clientes)
+    return render_template("clients/borrados.html", clientes=clientes, migas=_migas("Borrados"))
 
 
 @clients_bp.route("/<int:id_cliente>/reactivar", methods=["POST"])

@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.validaciones.vehicle_brands.logic import listar_marcas
 from src.modules.administrar.vehicles.logic import (
@@ -13,6 +14,13 @@ from src.modules.administrar.vehicles.logic import (
 )
 
 vehicles_bp = Blueprint("vehicles", __name__, url_prefix="/vehicles")
+
+
+def _migas(*ultimos):
+    piezas = [("Sistema de gestión", "administrar.index")]
+    piezas.append(("Vehículos", "vehicles.listar") if ultimos else "Vehículos")
+    piezas.extend(ultimos)
+    return migas(*piezas)
 
 
 def _parsear_numero(valor, campo, tipo):
@@ -41,7 +49,7 @@ def _datos_del_form():
 @login_required
 def listar():
     vehiculos = listar_vehiculos()
-    return render_template("vehicles/listar.html", vehiculos=vehiculos)
+    return render_template("vehicles/listar.html", vehiculos=vehiculos, migas=_migas())
 
 
 @vehicles_bp.route("/nuevo", methods=["GET", "POST"])
@@ -54,12 +62,16 @@ def nuevo():
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "vehicles/formulario.html", vehiculo=datos, accion="nueva", marcas=listar_marcas()
+                "vehicles/formulario.html", vehiculo=datos, accion="nueva", marcas=listar_marcas(),
+                migas=_migas("Nuevo vehículo"),
             )
         flash("Vehículo creado.", "success")
         return redirect(url_for("vehicles.listar"))
 
-    return render_template("vehicles/formulario.html", vehiculo=None, accion="nueva", marcas=listar_marcas())
+    return render_template(
+        "vehicles/formulario.html", vehiculo=None, accion="nueva", marcas=listar_marcas(),
+        migas=_migas("Nuevo vehículo"),
+    )
 
 
 @vehicles_bp.route("/<int:id_vehiculo>/editar", methods=["GET", "POST"])
@@ -81,12 +93,14 @@ def editar(id_vehiculo):
                 vehiculo={**datos, "id": id_vehiculo},
                 accion="editar",
                 marcas=listar_marcas(),
+                migas=_migas("Editar vehículo"),
             )
         flash("Vehículo actualizado.", "success")
         return redirect(url_for("vehicles.listar"))
 
     return render_template(
-        "vehicles/formulario.html", vehiculo=dict(vehiculo), accion="editar", marcas=listar_marcas()
+        "vehicles/formulario.html", vehiculo=dict(vehiculo), accion="editar", marcas=listar_marcas(),
+        migas=_migas("Editar vehículo"),
     )
 
 
@@ -106,7 +120,7 @@ def borrar(id_vehiculo):
 @login_required
 def borrados():
     vehiculos = [v for v in listar_vehiculos(incluir_borrados=True) if v["status"] == 0]
-    return render_template("vehicles/borrados.html", vehiculos=vehiculos)
+    return render_template("vehicles/borrados.html", vehiculos=vehiculos, migas=_migas("Borrados"))
 
 
 @vehicles_bp.route("/<int:id_vehiculo>/reactivar", methods=["POST"])

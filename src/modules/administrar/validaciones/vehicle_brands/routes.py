@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from src.auth import login_required
+from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.validaciones.vehicle_brands.logic import (
     actualizar_marca,
@@ -14,11 +15,22 @@ from src.modules.administrar.validaciones.vehicle_brands.logic import (
 vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/vehicle-brands")
 
 
+def _migas(*ultimos):
+    piezas = [
+        ("Sistema de gestión", "administrar.index"),
+        ("Administración", "administracion.index"),
+        ("Validaciones", "validaciones.index"),
+    ]
+    piezas.append(("Marcas de vehículos", "vehicle_brands.listar") if ultimos else "Marcas de vehículos")
+    piezas.extend(ultimos)
+    return migas(*piezas)
+
+
 @vehicle_brands_bp.route("/")
 @login_required
 def listar():
     marcas = listar_marcas()
-    return render_template("vehicle_brands/listar.html", marcas=marcas)
+    return render_template("vehicle_brands/listar.html", marcas=marcas, migas=_migas())
 
 
 @vehicle_brands_bp.route("/nuevo", methods=["GET", "POST"])
@@ -30,11 +42,16 @@ def nuevo():
             crear_marca(name)
         except ValidationError as error:
             flash(str(error), "error")
-            return render_template("vehicle_brands/formulario.html", marca={"name": name}, accion="nueva")
+            return render_template(
+                "vehicle_brands/formulario.html", marca={"name": name}, accion="nueva",
+                migas=_migas("Nueva marca"),
+            )
         flash("Marca creada.", "success")
         return redirect(url_for("vehicle_brands.listar"))
 
-    return render_template("vehicle_brands/formulario.html", marca=None, accion="nueva")
+    return render_template(
+        "vehicle_brands/formulario.html", marca=None, accion="nueva", migas=_migas("Nueva marca")
+    )
 
 
 @vehicle_brands_bp.route("/<int:id_marca>/editar", methods=["GET", "POST"])
@@ -52,12 +69,15 @@ def editar(id_marca):
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "vehicle_brands/formulario.html", marca={"id": id_marca, "name": name}, accion="editar"
+                "vehicle_brands/formulario.html", marca={"id": id_marca, "name": name}, accion="editar",
+                migas=_migas("Editar marca"),
             )
         flash("Marca actualizada.", "success")
         return redirect(url_for("vehicle_brands.listar"))
 
-    return render_template("vehicle_brands/formulario.html", marca=dict(marca), accion="editar")
+    return render_template(
+        "vehicle_brands/formulario.html", marca=dict(marca), accion="editar", migas=_migas("Editar marca")
+    )
 
 
 @vehicle_brands_bp.route("/<int:id_marca>/borrar", methods=["POST"])
@@ -76,7 +96,7 @@ def borrar(id_marca):
 @login_required
 def borrados():
     marcas = [m for m in listar_marcas(incluir_borrados=True) if m["status"] == 0]
-    return render_template("vehicle_brands/borrados.html", marcas=marcas)
+    return render_template("vehicle_brands/borrados.html", marcas=marcas, migas=_migas("Borrados"))
 
 
 @vehicle_brands_bp.route("/<int:id_marca>/reactivar", methods=["POST"])

@@ -107,6 +107,28 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   sin client_id (dueño) todavía: mismo criterio que insurance_companies,
   esa relación se define recién con el módulo de siniestros (ver VISIÓN A
   FUTURO) en vez de acoplarla antes de tiempo.
+- Reorganización de la navegación: la pantalla principal (/administrar) pasó
+  a llamarse "Sistema de gestión". Orden final de tiles: Administración,
+  Siniestros, Clientes, Vehículos, Stock. "Administración" (nuevo blueprint
+  administracion, src/modules/administrar/administracion/) agrupa lo
+  administrativo: Sucursales, Usuarios y Validaciones, que dejaron de estar
+  sueltos en la pantalla principal. "Siniestros" (src/modules/administrar/
+  siniestros/) es por ahora solo una página placeholder ("módulo todavía sin
+  diseñar"): el módulo real (cliente + vehículo + aseguradora) sigue
+  pendiente de diseño, ver VISIÓN A FUTURO. "Productos" se renombró a
+  "Stock" en el tile, el título de la página y el breadcrumb (el blueprint,
+  las rutas /products y las plantillas products/ por dentro no cambiaron de
+  nombre; "producto" se mantiene para referirse a un ítem individual, ej.
+  "Nuevo producto").
+- Breadcrumb de navegación (src/breadcrumbs.py, función migas): reemplaza el
+  link plano "Volver" que había en el nav de todas las páginas (base.html) y
+  los links sueltos "Volver"/"Volver a X" que había en cada formulario.html/
+  borrados.html. Ahora el nav muestra el camino completo hasta la página
+  actual (ej. "Sistema de gestión / Administración / Validaciones / Marcas
+  de vehículos"), con cada tramo como link a ese nivel salvo el último (la
+  página actual, sin link). Cada blueprint arma sus propias migas con un
+  helper _migas(*ultimos) local en su routes.py que antepone el camino fijo
+  hasta ese módulo.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -134,12 +156,6 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
-- El "Volver" de arriba de cada formulario/listado (ej. branches/formulario.html,
-  clients/formulario.html) hoy es un link suelto de texto plano. Cambiarlo por
-  un breadcrumb tipo carpetas, ej. "Administración / Clientes", donde cada
-  palabra del camino sea un link a ese nivel (Administración vuelve a
-  /administrar, Clientes vuelve al listado) en vez de un solo botón "Volver"
-  que siempre pega el mismo paso para atrás.
 
 
 VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
@@ -153,10 +169,12 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
   actualización, conciliaciones o aprobaciones con descuento.
 - Posible 2FA (TOTP con pyotp) para el login de Admin/BackOffice más
   adelante.
-- Módulo de siniestros: es la entidad real que une cliente + vehículo +
-  aseguradora (no un dato suelto de cada uno por separado). Un mismo
-  cliente puede tener varios siniestros, cada uno con su propia
-  aseguradora y su propio vehículo. Necesita:
+- Módulo de siniestros: ya tiene tile en la pantalla principal y una página
+  placeholder (src/modules/administrar/siniestros/, blueprint 'siniestros',
+  /siniestros) que solo avisa que está sin diseñar. Es la entidad real que
+  une cliente + vehículo + aseguradora (no un dato suelto de cada uno por
+  separado). Un mismo cliente puede tener varios siniestros, cada uno con su
+  propia aseguradora y su propio vehículo. Necesita:
     - Un id legible para humanos (no solo el autoincrement de la tabla),
       pensado como un resumen de patente + DNI, para que se pueda
       identificar un siniestro de un vistazo sin abrir el registro.
