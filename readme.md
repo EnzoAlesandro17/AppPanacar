@@ -35,7 +35,10 @@ AppPanacar/
     │   ├── user/{login,listar,formulario,borrados}.html
     │   ├── branches/{listar,formulario,borrados}.html
     │   ├── clients/{listar,formulario,borrados}.html
-    │   └── products/{listar,formulario,borrados}.html
+    │   ├── products/{listar,formulario,borrados}.html
+    │   ├── validaciones/index.html      # Índice de "Validaciones" con los links a cada catálogo
+    │   ├── vehicle_brands/{listar,formulario,borrados}.html
+    │   └── insurance_companies/{listar,formulario,borrados}.html
     └── modules/
         └── administrar/
             ├── __init__.py
@@ -52,13 +55,25 @@ AppPanacar/
             │   ├── db.py                 # Creación de la tabla products
             │   ├── logic.py              # CRUD, validación de precios mayorista/minorista y manejo de stock (incluye productos sin stock físico)
             │   └── routes.py             # Blueprint 'products': vistas HTTP (/products), CRUD completo + compatibilidad con vehículos
-            └── user/                    # Módulo de usuarios
-                ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
-                ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
-                └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/user), restringido a Admin/BackOffice salvo login/logout
+            ├── user/                    # Módulo de usuarios
+            │   ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
+            │   ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
+            │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/user), restringido a Admin/BackOffice salvo login/logout
+            └── validaciones/            # Catálogos de referencia usados por otros módulos
+                ├── routes.py              # Blueprint 'validaciones': índice de la sección (/validaciones)
+                ├── vehicle_brands/        # Marcas de vehículos (FK desde product_compatibility)
+                │   ├── db.py
+                │   ├── logic.py            # CRUD y borrado lógico
+                │   └── routes.py           # Blueprint 'vehicle_brands' (/vehicle-brands)
+                └── insurance_companies/   # Compañías de seguro (FK desde clients)
+                    ├── db.py
+                    ├── logic.py            # CRUD y borrado lógico
+                    └── routes.py           # Blueprint 'insurance_companies' (/insurance-companies)
 ```
 
 Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
+
+Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. No son texto libre: la compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) referencia una marca cargada en el catálogo, y un cliente (`clients.insurance_company_id`) puede vincularse a una compañía de seguro cargada ahí (útil para el seguimiento de siniestros en un taller de chapería). La migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`).
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 

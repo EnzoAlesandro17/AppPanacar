@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Marcas de vehículos borradas</h1>
+<p><a href="{{ url_for('vehicle_brands.listar') }}">Volver a marcas</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for marca in marcas %}
+        <tr>
+            <td>{{ marca['name'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('vehicle_brands.reactivar', id_marca=marca['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">No hay marcas borradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

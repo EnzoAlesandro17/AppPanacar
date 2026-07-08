@@ -4,6 +4,10 @@ from src.constants.validations import validar_campos_obligatorios
 from src.db.connection import obtener_conexion
 from src.exceptions import ValidationError
 from src.modules.administrar.products.db import TABLA, TABLA_COMPATIBILIDAD
+from src.modules.administrar.validaciones.vehicle_brands.db import TABLA as TABLA_VEHICLE_BRANDS
+from src.modules.administrar.validaciones.vehicle_brands.logic import (
+    obtener_por_id as obtener_marca_por_id,
+)
 
 PRODUCT_TYPES = ("Autoparte", "Consumible", "Herramienta")
 
@@ -265,21 +269,24 @@ def reactivar_producto(id_producto):
         conexion.commit()
 
 
-def agregar_compatibilidad(product_id, brand_vehicle, model, year=None):
+def agregar_compatibilidad(product_id, brand_vehicle_id, model, year=None):
     """Registra que el producto es compatible con un vehículo (marca/modelo/año)."""
-    validar_campos_obligatorios({"brand_vehicle": brand_vehicle, "model": model})
+    validar_campos_obligatorios({"brand_vehicle_id": brand_vehicle_id, "model": model})
     if obtener_por_id(product_id) is None:
         raise ValidationError("El producto no existe.")
+    marca = obtener_marca_por_id(brand_vehicle_id)
+    if marca is None or marca["status"] == 0:
+        raise ValidationError("La marca de vehículo indicada no existe.")
     if year is not None and (not isinstance(year, int) or isinstance(year, bool)):
         raise ValidationError("year debe ser un número entero, o vacío si aplica a todos los años.")
 
     with obtener_conexion() as conexion:
         cursor = conexion.execute(
             f"""
-            INSERT INTO {TABLA_COMPATIBILIDAD} (product_id, brand_vehicle, model, year)
+            INSERT INTO {TABLA_COMPATIBILIDAD} (product_id, brand_vehicle_id, model, year)
             VALUES (?, ?, ?, ?)
             """,
-            (product_id, brand_vehicle, model, year),
+            (product_id, brand_vehicle_id, model, year),
         )
         conexion.commit()
         return cursor.lastrowid
@@ -289,9 +296,11 @@ def listar_compatibilidad(product_id):
     with obtener_conexion() as conexion:
         return conexion.execute(
             f"""
-            SELECT * FROM {TABLA_COMPATIBILIDAD}
+            SELECT {TABLA_COMPATIBILIDAD}.*, {TABLA_VEHICLE_BRANDS}.name AS brand_vehicle_name
+            FROM {TABLA_COMPATIBILIDAD}
+            JOIN {TABLA_VEHICLE_BRANDS} ON {TABLA_VEHICLE_BRANDS}.id = {TABLA_COMPATIBILIDAD}.brand_vehicle_id
             WHERE product_id = ?
-            ORDER BY brand_vehicle, model, year
+            ORDER BY {TABLA_VEHICLE_BRANDS}.name, model, year
             """,
             (product_id,),
         ).fetchall()

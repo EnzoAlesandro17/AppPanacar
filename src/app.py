@@ -14,10 +14,20 @@ from src.modules.administrar.products.routes import products_bp
 from src.modules.administrar.routes import administrar_bp
 from src.modules.administrar.user.db import crear_tabla as crear_tabla_users
 from src.modules.administrar.user.routes import user_bp
+from src.modules.administrar.validaciones.insurance_companies.db import (
+    crear_tabla as crear_tabla_insurance_companies,
+)
+from src.modules.administrar.validaciones.insurance_companies.routes import insurance_companies_bp
+from src.modules.administrar.validaciones.routes import validaciones_bp
+from src.modules.administrar.validaciones.vehicle_brands.db import crear_tabla as crear_tabla_vehicle_brands
+from src.modules.administrar.validaciones.vehicle_brands.routes import vehicle_brands_bp
 
 
 def _inicializar_tablas():
-    # Orden importa: users tiene FK a branches.
+    # Orden importa: clients y products/compatibilidad tienen FK a estos catálogos;
+    # users tiene FK a branches.
+    crear_tabla_vehicle_brands()
+    crear_tabla_insurance_companies()
     crear_tabla_branches()
     crear_tabla_clients()
     crear_tabla_products()
@@ -42,6 +52,9 @@ def create_app():
     app.register_blueprint(clients_bp)
     app.register_blueprint(products_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(validaciones_bp)
+    app.register_blueprint(vehicle_brands_bp)
+    app.register_blueprint(insurance_companies_bp)
 
     @app.route("/")
     def index():

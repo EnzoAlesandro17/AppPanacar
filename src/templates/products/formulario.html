@@ -85,7 +85,7 @@
     <tbody>
         {% for c in compatibilidades %}
         <tr>
-            <td>{{ c['brand_vehicle'] }}</td>
+            <td>{{ c['brand_vehicle_name'] }}</td>
             <td>{{ c['model'] }}</td>
             <td>{{ c['year'] or 'Todos' }}</td>
             <td>
@@ -105,7 +105,12 @@
 <form method="post" action="{{ url_for('products.agregar_compatibilidad_ruta', id_producto=id_producto) }}" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Marca del vehículo
-        <input type="text" name="brand_vehicle" required>
+        <select name="brand_vehicle_id" required>
+            <option value="">— Elegir —</option>
+            {% for marca in marcas %}
+            <option value="{{ marca['id'] }}">{{ marca['name'] }}</option>
+            {% endfor %}
+        </select>
     </label>
     <label>Modelo
         <input type="text" name="model" required>

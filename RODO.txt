@@ -79,17 +79,32 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   alta/edición de los 4 módulos, borrar/reactivar, y compatibilidad de
   productos). Cualquier POST sin token válido devuelve 400 antes de tocar
   la vista.
+- Nueva sección "Validaciones" (src/modules/administrar/validaciones/):
+  agrupa catálogos de referencia con el mismo patrón CRUD que los demás
+  módulos (db/logic/routes + templates propios).
+    - vehicle_brands (marcas de vehículos): reemplaza el texto libre
+      brand_vehicle de product_compatibility por un brand_vehicle_id (FK).
+      La migración de la tabla vieja corre sola al arrancar la app: si
+      encuentra la columna brand_vehicle de texto, da de alta cada marca
+      distinta en el catálogo nuevo, la reemplaza por brand_vehicle_id y
+      borra la columna vieja (crear_tabla_compatibilidad en products/db.py).
+      Fue la primera migración de esquema real (ALTER TABLE) del proyecto,
+      sin borrar la DB de dev.
+    - insurance_companies (compañías de seguro): clients ganó un
+      insurance_company_id (FK, nullable) para vincular un cliente a su
+      aseguradora — pensado para el seguimiento de siniestros.
 
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
 - Controles de permiso por módulo y no solo en gestión de usuarios: hoy
   cualquier rol logueado (incluido Asesor) puede crear/editar/borrar
-  sucursales, clientes y productos porque branches/clients/products routes.py
-  solo exigen login_required, sin pasar por src/permissions.py. Falta decidir
-  qué puede hacer cada rol en esos módulos (ej: ¿un Asesor debería poder
-  borrar una sucursal?) y sumarlo a permissions.py como ya existe para
-  usuarios (puede_gestionar_usuarios/puede_cambiar_password).
+  sucursales, clientes, productos, marcas de vehículos y compañías de
+  seguro porque esos routes.py solo exigen login_required, sin pasar por
+  src/permissions.py. Falta decidir qué puede hacer cada rol en esos
+  módulos (ej: ¿un Asesor debería poder borrar una marca o una sucursal?)
+  y sumarlo a permissions.py como ya existe para usuarios
+  (puede_gestionar_usuarios/puede_cambiar_password).
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
   escenario sin WiFi?). Todavía sin diseñar a propósito.
@@ -100,8 +115,9 @@ QUÉ SEGUIRÍA HACIENDO
   decidir si cada sucursal tiene su propia DB y cómo se sincronizan, o si se
   apunta a un servidor central que a veces no es alcanzable.
 - Tests automatizados (pytest) en vez de scripts sueltos.
-- Migraciones de esquema reales (ALTER TABLE) para columnas nuevas, en vez de
-  borrar la DB de dev.
+- Seguir usando migraciones de esquema reales (ALTER TABLE) para columnas
+  nuevas en vez de borrar la DB de dev — ya se hizo una vez (brand_vehicle
+  -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
 

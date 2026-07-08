@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Validaciones</h1>
+<div class="tiles">
+    <a class="tile" href="{{ url_for('vehicle_brands.listar') }}">Marcas de vehículos</a>
+    <a class="tile" href="{{ url_for('insurance_companies.listar') }}">Compañías de seguro</a>
+</div>
+{% endblock %}

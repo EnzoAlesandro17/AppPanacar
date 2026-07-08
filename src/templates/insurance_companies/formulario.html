@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar compañía' if accion == 'editar' else 'Nueva compañía' }}</h1>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre
+        <input type="text" name="name" value="{{ aseguradora.name or '' if aseguradora else '' }}" required>
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+<p><a href="{{ url_for('insurance_companies.listar') }}">Volver</a></p>
+{% endblock %}

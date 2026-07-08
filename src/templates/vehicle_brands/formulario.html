@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar marca' if accion == 'editar' else 'Nueva marca' }}</h1>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre
+        <input type="text" name="name" value="{{ marca.name or '' if marca else '' }}" required>
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+<p><a href="{{ url_for('vehicle_brands.listar') }}">Volver</a></p>
+{% endblock %}

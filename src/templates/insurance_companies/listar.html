@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Compañías de seguro</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('insurance_companies.nuevo') }}">+ Nueva compañía</a>
+    <a class="btn btn-secondary" href="{{ url_for('insurance_companies.borrados') }}">Ver borradas</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for aseguradora in aseguradoras %}
+        <tr>
+            <td>{{ aseguradora['name'] }}</td>
+            <td>
+                <a href="{{ url_for('insurance_companies.editar', id_aseguradora=aseguradora['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('insurance_companies.borrar', id_aseguradora=aseguradora['id']) }}"
+                      onsubmit="return confirm('¿Borrar la compañía {{ aseguradora['name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">No hay compañías de seguro cargadas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

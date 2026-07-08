@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Compañías de seguro borradas</h1>
+<p><a href="{{ url_for('insurance_companies.listar') }}">Volver a compañías</a></p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for aseguradora in aseguradoras %}
+        <tr>
+            <td>{{ aseguradora['name'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('insurance_companies.reactivar', id_aseguradora=aseguradora['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">No hay compañías de seguro borradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

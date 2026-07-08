@@ -16,6 +16,7 @@ from src.modules.administrar.products.logic import (
     obtener_por_id,
     reactivar_producto,
 )
+from src.modules.administrar.validaciones.vehicle_brands.logic import listar_marcas
 
 products_bp = Blueprint("products", __name__, url_prefix="/products")
 
@@ -98,6 +99,7 @@ def editar(id_producto):
                 "products/formulario.html", producto=dict(request.form), accion="editar",
                 product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
                 compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
+                marcas=listar_marcas(),
             )
         flash("Producto actualizado.", "success")
         return redirect(url_for("products.editar", id_producto=id_producto))
@@ -106,6 +108,7 @@ def editar(id_producto):
         "products/formulario.html", producto=dict(producto), accion="editar",
         product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
         compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
+        marcas=listar_marcas(),
     )
 
 
@@ -147,12 +150,12 @@ def agregar_compatibilidad_ruta(id_producto):
         flash("El producto no existe.", "error")
         return redirect(url_for("products.listar"))
 
-    brand_vehicle = request.form.get("brand_vehicle", "").strip()
+    brand_vehicle_id = _parsear_numero(request.form.get("brand_vehicle_id", ""), "brand_vehicle_id", int)
     model = request.form.get("model", "").strip()
     year = _parsear_numero(request.form.get("year", ""), "year", int)
 
     try:
-        agregar_compatibilidad(id_producto, brand_vehicle, model, year)
+        agregar_compatibilidad(id_producto, brand_vehicle_id, model, year)
     except ValidationError as error:
         flash(str(error), "error")
     else:
