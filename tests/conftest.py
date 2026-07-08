@@ -54,3 +54,23 @@ def admin(client):
         follow_redirects=True,
     )
     return client
+
+
+@pytest.fixture
+def asesor(client):
+    """Crea un Asesor (sin permiso de gestión de usuarios) y lo loguea. Devuelve el client logueado."""
+    from src.modules.administrar.user.logic import crear_usuario
+
+    crear_usuario(
+        name="Ana", last_name="Asesora", dni="20000001",
+        username="asesor_test", password="clave-segura-123", role="Asesor",
+    )
+
+    resp = client.get("/usuarios/login")
+    token = extraer_csrf(resp.data)
+    client.post(
+        "/usuarios/login",
+        data={"csrf_token": token, "username": "asesor_test", "password": "clave-segura-123"},
+        follow_redirects=True,
+    )
+    return client

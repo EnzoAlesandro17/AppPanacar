@@ -18,7 +18,8 @@
                     <span class="usuario-info">{{ session['name'] }} <small>({{ session['role'] }})</small></span>
                 </button>
                 <div class="usuario-dropdown" id="usuario-dropdown" hidden>
-                    <a href="{{ url_for('user.logout') }}">Salir</a>
+                    <a href="{{ url_for('user.perfil') }}">Configurar cuenta</a>
+                    <a href="{{ url_for('user.logout') }}" class="usuario-dropdown-salir">Salir</a>
                 </div>
             </div>
         </div>

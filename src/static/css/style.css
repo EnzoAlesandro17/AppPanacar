@@ -139,6 +139,10 @@ header.barra .usuario-dropdown a {
     background: var(--color-bg);
 }
 
+.usuario-dropdown-salir {
+    border-top: 1px solid var(--color-border);
+}
+
 nav.menu {
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);

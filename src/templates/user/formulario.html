@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ 'Editar usuario' if accion == 'editar' else 'Nuevo usuario' }}</h1>
+<h1>{{ 'Mi cuenta' if accion == 'perfil' else ('Editar usuario' if accion == 'editar' else 'Nuevo usuario') }}</h1>
 <form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Nombre
@@ -16,6 +16,7 @@
     <label>Código
         <input type="text" name="code" value="{{ usuario.code or '' if usuario else '' }}">
     </label>
+    {% if accion != 'perfil' %}
     <label>Rol
         <select name="role" required>
             {% for rol in roles %}
@@ -31,10 +32,11 @@
             {% endfor %}
         </select>
     </label>
+    {% endif %}
     <label>Usuario (opcional: si se carga, va junto con la contraseña)
         <input type="text" name="username" value="{{ usuario.username or '' if usuario else '' }}">
     </label>
-    <label>Contraseña{{ ' (dejar vacío para no cambiarla)' if accion == 'editar' else '' }}
+    <label>Contraseña{{ ' (dejar vacío para no cambiarla)' if accion in ('editar', 'perfil') else '' }}
         <input type="password" name="password">
     </label>
     <label>Email

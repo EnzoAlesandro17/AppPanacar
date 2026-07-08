@@ -214,8 +214,25 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   avatar + nombre (src/static/js/menu-usuario.js, el segundo JS del
   proyecto además de reorder.js — mismo criterio: vanilla, sin
   librerías). Se cierra clickeando afuera, con Escape, o clickeando el
-  mismo botón de nuevo. Pensado para sumarle más opciones más adelante
-  (cambiar contraseña, etc.), ver QUÉ SEGUIRÍA HACIENDO.
+  mismo botón de nuevo. El dropdown ahora tiene dos opciones: "Configurar
+  cuenta" (ver ítem siguiente) y "Salir".
+- Autogestión de cuenta (/usuarios/perfil, user_bp): cualquier usuario
+  logueado, sea cual sea su rol, puede editar sus propios datos sin pasar
+  por _requiere_gestion_usuarios (a diferencia de /usuarios/<id>/editar,
+  que sigue siendo Admin/BackOffice-only). Comparte el mismo template
+  user/formulario.html con accion="perfil": el bloque de Rol/Sucursal se
+  oculta con {% if accion != 'perfil' %}. La parte importante es en el
+  backend, no en el template: _datos_del_form_perfil() es una función
+  separada de _datos_del_form() (no un filtro del mismo dict) que ni
+  siquiera lee role/branch_id del form, así que aunque alguien edite el
+  HTML a mano y mande esos campos en el POST, el servidor los ignora por
+  completo — no hay forma de subirse de rol editando la propia cuenta.
+  Probado en tests/test_perfil.py (incluye el caso de intento de escalar
+  rol/sucursal a mano). El breadcrumb de esta página es top-level
+  ("Sistema de gestión / Mi cuenta"), sin pasar por Administración, a
+  propósito: cuando se implementen permisos por módulo (ítem siguiente) y
+  Administración quede bloqueada para Asesor, /perfil tiene que seguir
+  siendo alcanzable igual.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -227,7 +244,12 @@ QUÉ SEGUIRÍA HACIENDO
   sin pasar por src/permissions.py. Falta decidir qué puede hacer cada
   rol en esos módulos (ej: ¿un Asesor debería poder borrar una marca o
   una sucursal?) y sumarlo a permissions.py como ya existe para usuarios
-  (puede_gestionar_usuarios/puede_cambiar_password).
+  (puede_gestionar_usuarios/puede_cambiar_password). Idea concreta: la
+  sección completa de Administración (Sucursales/Usuarios/Validaciones)
+  debería quedar directamente inaccesible para Asesor, no solo con botones
+  ocultos en el template sino bloqueada en el propio routes.py de cada
+  vista. /usuarios/perfil (ver QUÉ HICIMOS) ya quedó armado para seguir
+  siendo accesible aunque el resto de Administración se bloquee.
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
   escenario sin WiFi?). Todavía sin diseñar a propósito.
@@ -246,10 +268,10 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
-- Sumar más opciones al menú de usuario además de "Salir" (cambiar
-  contraseña, quizás preferencias de usuario). El dropdown y el botón ya
-  existen (ver QUÉ HICIMOS), solo falta agregar los links adentro cuando
-  existan esas pantallas.
+- Sumar más opciones al dropdown de usuario además de "Configurar cuenta"
+  y "Salir" (cambiar contraseña ya se puede desde "Configurar cuenta", ese
+  campo es parte del formulario compartido). Preferencias de usuario u
+  otras pantallas de cuenta, cuando haga falta.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)

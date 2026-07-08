@@ -14,7 +14,8 @@ AppPanacar/
 │   ├── test_breadcrumbs.py           # migas() de src/breadcrumbs.py
 │   ├── test_login.py                 # iniciar_sesion: credenciales, mensaje genérico, bloqueo tras MAX_LOGIN_ATTEMPTS, usuario borrado, y el flujo HTTP /usuarios/login
 │   ├── test_branches.py              # CRUD + borrado lógico + reordenar_sucursales, como referencia del patrón repetido en los demás módulos
-│   └── test_reorder_http.py          # Endpoint POST /reordenar por HTTP: aplica el orden, exige CSRF (header) y login
+│   ├── test_reorder_http.py          # Endpoint POST /reordenar por HTTP: aplica el orden, exige CSRF (header) y login
+│   └── test_perfil.py                 # /usuarios/perfil: accesible sin permiso de gestión, sin campo role, e ignora intentos de escalar rol/sucursal
 ├── data/
 │   └── database.db                  # Base de datos SQLite local con los datos (se crea/usa en runtime, ignorada por git)
 ├── .venv/                           # Entorno virtual de Python (ignorado por git)
@@ -124,3 +125,4 @@ Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test 
 - **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado), así nunca se pierden datos de auditoría por error.
 - **Consultas parametrizadas**: todas las queries a SQLite usan placeholders (`?`), nunca se arma SQL concatenando texto ingresado por el usuario — evita inyección SQL.
 - **Protección CSRF**: `Flask-WTF` (`CSRFProtect`) está activado globalmente en `create_app()` (`src/app.py`); todos los `<form method="post">` llevan su `csrf_token` oculto. Cualquier POST sin token válido responde 400 antes de llegar a la vista.
+- **Autogestión sin escalar rol**: `/usuarios/perfil` deja a cualquier usuario logueado editar sus propios datos (nombre, contraseña, teléfono, etc.) sin pasar por `puede_gestionar_usuarios` — comparte el template `user/formulario.html` con la edición de Admin/BackOffice, pero nunca lee ni acepta `role`/`branch_id` del formulario (`_datos_del_form_perfil` en `user/routes.py`, función separada a propósito de `_datos_del_form`, no un filtro del mismo dict). Aunque alguien edite el HTML y mande esos campos igual, el servidor los ignora por completo: probado en `tests/test_perfil.py`.

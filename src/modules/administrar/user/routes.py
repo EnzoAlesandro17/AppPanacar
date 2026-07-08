@@ -54,6 +54,24 @@ def _datos_del_form():
     }
 
 
+def _datos_del_form_perfil():
+    """Como _datos_del_form pero sin role/branch_id: la autogestión nunca
+    puede tocar esos dos campos, solo la edición desde /usuarios (Admin/
+    BackOffice). Se arma a propósito como función separada, no filtrando el
+    dict de _datos_del_form, para que sea imposible colar esos campos por
+    error en el futuro."""
+    return {
+        "name": request.form.get("name", "").strip(),
+        "last_name": request.form.get("last_name", "").strip(),
+        "dni": request.form.get("dni", "").strip(),
+        "code": request.form.get("code", "").strip() or None,
+        "username": request.form.get("username", "").strip() or None,
+        "email": request.form.get("email", "").strip() or None,
+        "birth_date": request.form.get("birth_date", "").strip() or None,
+        "phone": request.form.get("phone", "").strip() or None,
+    }
+
+
 @user_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -211,3 +229,40 @@ def reordenar():
     datos = request.get_json(silent=True) or {}
     reordenar_usuarios(datos.get("orden", []))
     return "", 204
+
+
+@user_bp.route("/perfil", methods=["GET", "POST"])
+@login_required
+def perfil():
+    """Autogestión: cualquier usuario logueado edita sus propios datos,
+    sin pasar por _requiere_gestion_usuarios (a diferencia de /editar).
+    Nunca recibe ni toca role/branch_id (ver _datos_del_form_perfil) para
+    que nadie pueda subirse de rol editando su propia cuenta."""
+    usuario = obtener_por_id(session["user_id"])
+    if usuario is None:
+        flash("Tu usuario no existe.", "error")
+        return redirect(url_for("user.logout"))
+
+    if request.method == "POST":
+        datos = _datos_del_form_perfil()
+        password = request.form.get("password", "").strip() or None
+        try:
+            actualizar_usuario(session["user_id"], password=password, **datos)
+        except ValidationError as error:
+            flash(str(error), "error")
+            return render_template(
+                "user/formulario.html",
+                usuario={**datos, "id": session["user_id"]},
+                accion="perfil",
+                migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
+            )
+        session["name"] = f"{datos['name']} {datos['last_name']}"
+        flash("Tus datos se actualizaron.", "success")
+        return redirect(url_for("user.perfil"))
+
+    return render_template(
+        "user/formulario.html",
+        usuario=dict(usuario),
+        accion="perfil",
+        migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
+    )
