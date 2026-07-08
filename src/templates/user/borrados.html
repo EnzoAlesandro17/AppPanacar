@@ -22,6 +22,7 @@
             <td>{{ usuario['branch_id'] or '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('user.reactivar', id_usuario=usuario['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>

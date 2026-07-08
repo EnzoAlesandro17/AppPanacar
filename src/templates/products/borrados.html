@@ -27,6 +27,7 @@
             <td>{{ producto['retail_price'] }}</td>
             <td>
                 <form method="post" action="{{ url_for('products.reactivar', id_producto=producto['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>

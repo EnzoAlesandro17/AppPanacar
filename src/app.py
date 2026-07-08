@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for
+from flask_wtf import CSRFProtect
 
 from src.cli import registrar_comandos
 from src.config import SECRET_KEY
@@ -27,6 +28,7 @@ def _inicializar_tablas():
 def create_app():
     app = Flask(__name__)
     app.secret_key = SECRET_KEY
+    CSRFProtect(app)
 
     @app.context_processor
     def inyectar_app_name():

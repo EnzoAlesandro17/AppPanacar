@@ -27,6 +27,7 @@
                 <a href="{{ url_for('branches.editar', id_sucursal=sucursal['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('branches.borrar', id_sucursal=sucursal['id']) }}"
                       onsubmit="return confirm('¿Borrar la sucursal {{ sucursal['name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>
             </td>

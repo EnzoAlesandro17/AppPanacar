@@ -74,10 +74,22 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
 - src/session.py guarda el usuario logueado en memoria del proceso.
 - login real vía iniciar_sesion() en user/logic.py (mensaje de error
   genérico, bloqueo a los MAX_LOGIN_ATTEMPTS intentos fallidos).
+- Protección CSRF con Flask-WTF (CSRFProtect activado en create_app(),
+  src/app.py) y csrf_token oculto en los 15 forms POST de la app (login,
+  alta/edición de los 4 módulos, borrar/reactivar, y compatibilidad de
+  productos). Cualquier POST sin token válido devuelve 400 antes de tocar
+  la vista.
 
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
+- Controles de permiso por módulo y no solo en gestión de usuarios: hoy
+  cualquier rol logueado (incluido Asesor) puede crear/editar/borrar
+  sucursales, clientes y productos porque branches/clients/products routes.py
+  solo exigen login_required, sin pasar por src/permissions.py. Falta decidir
+  qué puede hacer cada rol en esos módulos (ej: ¿un Asesor debería poder
+  borrar una sucursal?) y sumarlo a permissions.py como ya existe para
+  usuarios (puede_gestionar_usuarios/puede_cambiar_password).
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
   escenario sin WiFi?). Todavía sin diseñar a propósito.

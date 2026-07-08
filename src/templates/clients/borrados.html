@@ -22,6 +22,7 @@
             <td>{{ cliente['email'] or '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('clients.reactivar', id_cliente=cliente['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>

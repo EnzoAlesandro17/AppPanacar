@@ -3,6 +3,7 @@
 {% block content %}
 <h1>{{ 'Editar producto' if accion == 'editar' else 'Nuevo producto' }}</h1>
 <form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Tipo
         <select name="product_type" required>
             {% for tipo in product_types %}
@@ -89,6 +90,7 @@
             <td>{{ c['year'] or 'Todos' }}</td>
             <td>
                 <form method="post" action="{{ url_for('products.borrar_compatibilidad_ruta', id_producto=id_producto, id_compatibilidad=c['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Quitar</button>
                 </form>
             </td>
@@ -101,6 +103,7 @@
 </div>
 
 <form method="post" action="{{ url_for('products.agregar_compatibilidad_ruta', id_producto=id_producto) }}" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Marca del vehículo
         <input type="text" name="brand_vehicle" required>
     </label>

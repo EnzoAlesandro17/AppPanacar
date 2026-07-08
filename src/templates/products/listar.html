@@ -36,6 +36,7 @@
                 <a href="{{ url_for('products.editar', id_producto=producto['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('products.borrar', id_producto=producto['id']) }}"
                       onsubmit="return confirm('¿Borrar el producto {{ producto['name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>
             </td>

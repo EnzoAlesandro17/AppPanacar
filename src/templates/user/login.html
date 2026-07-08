@@ -6,6 +6,7 @@
 <p class="brand">{{ app_name }}</p>
 <h1>Iniciar sesión</h1>
 <form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Usuario
         <input type="text" name="username" required autofocus>
     </label>

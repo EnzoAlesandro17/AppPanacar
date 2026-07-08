@@ -28,6 +28,7 @@
                 {% if usuario['id'] != session.get('user_id') %}
                 <form method="post" action="{{ url_for('user.borrar', id_usuario=usuario['id']) }}"
                       onsubmit="return confirm('¿Borrar al usuario {{ usuario['name'] }} {{ usuario['last_name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>
                 {% endif %}

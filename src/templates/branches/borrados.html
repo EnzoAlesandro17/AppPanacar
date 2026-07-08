@@ -22,6 +22,7 @@
             <td>{{ sucursal['phone'] or '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('branches.reactivar', id_sucursal=sucursal['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>

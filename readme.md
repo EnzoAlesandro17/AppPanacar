@@ -4,7 +4,7 @@
 AppPanacar/
 ├── RODO.txt                        # Notas personales del desarrollo: qué se hizo, qué falta, decisiones e ideas a futuro
 ├── readme.md                       # Este archivo
-├── requirements.txt                 # Dependencias del proyecto (Flask)
+├── requirements.txt                 # Dependencias del proyecto (Flask, Flask-WTF)
 ├── app.py                           # Entrypoint: crea la app con create_app() y la corre (flask run / python app.py)
 ├── .gitignore                       # Ignora .venv/, data/, __pycache__/ y .env
 ├── data/
@@ -32,10 +32,10 @@ AppPanacar/
     ├── templates/
     │   ├── base.html                  # Layout común: header con usuario logueado, nav, mensajes flash
     │   ├── administrar/index.html      # Índice de "Administrar" con los links a cada módulo
-    │   ├── user/{login,listar}.html
-    │   ├── branches/listar.html
-    │   ├── clients/listar.html
-    │   └── products/listar.html
+    │   ├── user/{login,listar,formulario,borrados}.html
+    │   ├── branches/{listar,formulario,borrados}.html
+    │   ├── clients/{listar,formulario,borrados}.html
+    │   └── products/{listar,formulario,borrados}.html
     └── modules/
         └── administrar/
             ├── __init__.py
@@ -43,22 +43,22 @@ AppPanacar/
             ├── branches/               # Módulo de sucursales
             │   ├── db.py                 # Creación de la tabla branches
             │   ├── logic.py              # CRUD y validaciones de sucursales (alta, edición, borrado lógico, búsqueda)
-            │   └── routes.py             # Blueprint 'branches': vistas HTTP (/branches), solo lectura por ahora
+            │   └── routes.py             # Blueprint 'branches': vistas HTTP (/branches), CRUD completo (listar/nuevo/editar/borrar/reactivar)
             ├── clients/                 # Módulo de clientes
             │   ├── db.py                 # Creación de la tabla clients
             │   ├── logic.py              # CRUD y validaciones de clientes (DNI/CUIT, teléfono, email, borrado lógico)
-            │   └── routes.py             # Blueprint 'clients': vistas HTTP (/clients), solo lectura por ahora
+            │   └── routes.py             # Blueprint 'clients': vistas HTTP (/clients), CRUD completo (listar/nuevo/editar/borrar/reactivar)
             ├── products/                # Módulo de productos
             │   ├── db.py                 # Creación de la tabla products
             │   ├── logic.py              # CRUD, validación de precios mayorista/minorista y manejo de stock (incluye productos sin stock físico)
-            │   └── routes.py             # Blueprint 'products': vistas HTTP (/products), solo lectura por ahora
+            │   └── routes.py             # Blueprint 'products': vistas HTTP (/products), CRUD completo + compatibilidad con vehículos
             └── user/                    # Módulo de usuarios
                 ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
                 ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
-                └── routes.py             # Blueprint 'user': login, logout y listado (/user)
+                └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/user), restringido a Admin/BackOffice salvo login/logout
 ```
 
-Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Por ahora las vistas de sucursales, clientes, productos y usuarios son solo de lectura (listar) — falta cargar/editar/borrar desde HTML, que hoy solo existe en la capa de lógica. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
+Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
 
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 
@@ -72,3 +72,4 @@ Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, co
 - **Teléfonos en formato estándar**: se valida contra E.164 (estándar internacional ITU-T), en vez de un formato fijo hardcodeado a un solo país (`validar_telefono`).
 - **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado), así nunca se pierden datos de auditoría por error.
 - **Consultas parametrizadas**: todas las queries a SQLite usan placeholders (`?`), nunca se arma SQL concatenando texto ingresado por el usuario — evita inyección SQL.
+- **Protección CSRF**: `Flask-WTF` (`CSRFProtect`) está activado globalmente en `create_app()` (`src/app.py`); todos los `<form method="post">` llevan su `csrf_token` oculto. Cualquier POST sin token válido responde 400 antes de llegar a la vista.
