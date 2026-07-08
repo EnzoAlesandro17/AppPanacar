@@ -277,6 +277,17 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   horizontalmente en la pantalla (margin: 0 auto en style.css). Antes
   quedaban pegados a la izquierda dentro del <main> de 900px porque solo
   tenían max-width sin margin auto.
+- Header más limpio: el avatar ahora tiene dos letras (inicial del nombre
+  + inicial del apellido, session['iniciales'], calculada en
+  user/routes.py con _iniciales() al loguearse y al guardar cambios en
+  "Mi cuenta") en vez de una sola. El nombre y el rol dejaron de mostrarse
+  siempre al lado del avatar en la barra superior: ahora solo aparecen
+  como tooltip nativo (atributo title del botón) al pasar el mouse, y
+  como texto no clickeable arriba del todo dentro del dropdown
+  (.usuario-dropdown-info), separado de los links por un borde. Nota: si
+  alguien ya tenía una sesión abierta de antes de este cambio, el avatar
+  le va a aparecer vacío hasta el próximo login (session['iniciales'] no
+  existía en sesiones viejas) — no rompe nada, se autoresuelve solo.
 
 
 QUÉ SEGUIRÍA HACIENDO

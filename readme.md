@@ -42,7 +42,7 @@ AppPanacar/
     ├── static/
     │   ├── css/style.css              # Estilos mínimos compartidos por todas las páginas
     │   ├── js/reorder.js                # Arrastrar y soltar para reordenar listados
-    │   ├── js/menu-usuario.js            # Dropdown de "Configurar cuenta"/"Salir" en el avatar del header
+    │   ├── js/menu-usuario.js            # Dropdown de "Mi cuenta"/"Configuración"/"Salir" en el avatar del header
     │   └── js/mostrar-password.js        # Ícono de ojo (abierto/cerrado) genérico para mostrar/ocultar cualquier campo de contraseña
     ├── templates/
     │   ├── base.html                  # Layout común: header con usuario logueado (avatar + dropdown "Mi cuenta"/"Configuración"/"Salir"), nav con breadcrumb, mensajes flash
@@ -113,7 +113,7 @@ Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catá
 
 Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios y Validaciones), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`) y **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
 
-El avatar del header abre un dropdown con **Mi cuenta** (`/usuarios/perfil`), **Configuración** (`/configuracion`, todavía una página vacía sin diseñar) y **Salir**.
+El avatar del header (dos letras: inicial del nombre + inicial del apellido, `session['iniciales']`) abre un dropdown con **Mi cuenta** (`/usuarios/perfil`), **Configuración** (`/configuracion`, todavía una página vacía sin diseñar) y **Salir**. El nombre y el rol no se muestran sueltos en la barra: solo aparecen como tooltip nativo al pasar el mouse sobre el avatar, y como texto (no clickeable) arriba de los links dentro del dropdown.
 
 Fechas en los formularios (nacimiento en usuarios, compra en stock) se muestran y se cargan en formato argentino `dd/mm/aaaa` (`<input type="text">` con `pattern`, no `<input type="date">`: ese tipo de campo respeta el idioma/región configurado en el navegador del que lo abre, no el `lang` de la página, así que en la práctica mostraba `mm/dd/yyyy` en muchos casos). `parsear_fecha_visual`/`formatear_fecha_visual` (`src/constants/validations.py`) hacen la conversión hacia/desde el `aaaa-mm-dd` que se guarda en la base; `validar_fecha`/`validar_mayor_edad` siguen trabajando en ISO sin cambios. El filtro de Jinja `fecha_visual` (registrado en `create_app()`) es el que se usa en los templates para mostrar el valor guardado.
 

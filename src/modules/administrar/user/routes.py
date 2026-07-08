@@ -79,6 +79,11 @@ def _datos_del_form_perfil():
     }
 
 
+def _iniciales(name, last_name):
+    """Dos letras para el avatar del header: inicial del nombre + inicial del apellido."""
+    return (name[0] + last_name[0]).upper()
+
+
 @user_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -92,6 +97,7 @@ def login():
 
         session["user_id"] = usuario["id"]
         session["name"] = f"{usuario['name']} {usuario['last_name']}"
+        session["iniciales"] = _iniciales(usuario["name"], usuario["last_name"])
         session["role"] = usuario["role"]
         return redirect(url_for("administrar.index"))
 
@@ -268,6 +274,7 @@ def perfil():
                 migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
             )
         session["name"] = f"{datos['name']} {datos['last_name']}"
+        session["iniciales"] = _iniciales(datos["name"], datos["last_name"])
         flash("Tus datos se actualizaron.", "success")
         return redirect(url_for("user.perfil"))
 

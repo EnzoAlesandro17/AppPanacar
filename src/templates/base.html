@@ -13,11 +13,12 @@
         <div class="barra-inner">
             <span class="marca">{{ app_name }}</span>
             <div class="usuario-actual">
-                <button type="button" class="usuario-boton" id="usuario-boton" aria-haspopup="true" aria-expanded="false">
-                    <span class="avatar">{{ session['name'][0] | upper }}</span>
-                    <span class="usuario-info">{{ session['name'] }} <small>({{ session['role'] }})</small></span>
+                <button type="button" class="usuario-boton" id="usuario-boton" aria-haspopup="true" aria-expanded="false"
+                        title="{{ session['name'] }} ({{ session['role'] }})">
+                    <span class="avatar">{{ session['iniciales'] }}</span>
                 </button>
                 <div class="usuario-dropdown" id="usuario-dropdown" hidden>
+                    <div class="usuario-dropdown-info">{{ session['name'] }} <small>({{ session['role'] }})</small></div>
                     <a href="{{ url_for('user.perfil') }}">Mi cuenta</a>
                     <a href="{{ url_for('configuracion.index') }}">Configuración</a>
                     <a href="{{ url_for('user.logout') }}" class="usuario-dropdown-salir">Salir</a>

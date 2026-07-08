@@ -77,40 +77,41 @@ header.barra a:hover {
 .usuario-boton {
     display: flex;
     align-items: center;
-    gap: 10px;
     background: none;
     border: none;
-    padding: 4px 6px;
-    border-radius: var(--radius);
-    color: #fff;
-    font: inherit;
+    padding: 3px;
+    border-radius: 50%;
     cursor: pointer;
 }
 
 .usuario-boton:hover {
-    background: rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .15);
 }
 
 .usuario-boton .avatar {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     background: var(--color-primary);
     color: #fff;
     font-weight: 700;
-    font-size: .8rem;
+    font-size: .75rem;
+    letter-spacing: -.02em;
     flex-shrink: 0;
 }
 
-.usuario-boton .usuario-info {
+.usuario-dropdown-info {
+    padding: 10px 14px;
     font-weight: 500;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.usuario-boton .usuario-info small {
-    color: #cbd5e1;
+.usuario-dropdown-info small {
+    color: var(--color-text-muted);
     font-weight: 400;
 }
 
