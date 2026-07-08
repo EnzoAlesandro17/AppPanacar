@@ -97,6 +97,27 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
       siniestros con distintas aseguradoras) — se revirtió esa FK y quedó
       solo el catálogo, a la espera del módulo de siniestros (ver VISIÓN A
       FUTURO).
+    - claim_statuses (estados de siniestro): mismo patrón simple que
+      vehicle_brands (solo name + status), catálogo cargado y todavía sin
+      engancharse a ningún módulo real. Pensado para el desplegable de
+      estado cuando exista la pantalla de siniestros (ver VISIÓN A FUTURO).
+- Orden editable a mano: branches, user, vehicle_brands, insurance_companies
+  y claim_statuses suman una columna sort_order (migración ALTER TABLE +
+  backfill respetando el orden alfabético que tenían). Primer intento con
+  botones ↑/↓ (mover_arriba/mover_abajo por swap con la fila vecina):
+  funcionaba pero quedaba feo, así que se reemplazó por arrastrar y soltar
+  (drag & drop) directo sobre la fila. Es el primer uso de JavaScript en el
+  proyecto: src/static/js/reorder.js, vanilla y sin librerías/CDN (offline).
+  Usa Pointer Events en vez de la API nativa de drag-and-drop HTML5 porque
+  esa API no soporta touch y la app tiene que andar en celulares. Al soltar
+  manda por fetch el array completo de ids en su nuevo orden a un endpoint
+  POST .../reordenar de cada blueprint (csrf token vía header X-CSRFToken,
+  tomado de <meta name="csrf-token"> agregado a base.html); reordenar_* en
+  cada logic.py reescribe sort_order según la posición de cada id recibido.
+  Los registros nuevos se agregan al final (MAX(sort_order) + 1). clients,
+  products y vehicles quedaron afuera a propósito: son listas que crecen
+  mucho (no un catálogo chico) y no tiene sentido ordenarlas a mano, siguen
+  por nombre/dominio.
 - vehicles (src/modules/administrar/vehicles/): tabla de vehículos
   concretos, primer paso hacia el módulo de siniestros. Marca (FK a
   vehicle_brands), modelo, año y dominio son obligatorios; color, número
@@ -184,8 +205,10 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
       siguiente) sin salir del formulario.
     - Selector de compañía de seguro (ya existe el catálogo
       insurance_companies, falta el módulo que lo consuma).
-    - El resto de los datos del siniestro (fecha, descripción, estado,
-      etc.) todavía sin definir.
+    - Selector de estado (ya existe el catálogo claim_statuses, falta el
+      módulo que lo consuma).
+    - El resto de los datos del siniestro (fecha, descripción, etc.)
+      todavía sin definir.
 - Tabla de vehículos: ya existe (src/modules/administrar/vehicles/), con
   marca -FK a vehicle_brands-, modelo, año, dominio, color, número de
   chasis y número de motor. Todavía sin dueño/cliente a propósito (ver

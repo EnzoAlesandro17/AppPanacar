@@ -16,6 +16,8 @@ from src.modules.administrar.routes import administrar_bp
 from src.modules.administrar.siniestros.routes import siniestros_bp
 from src.modules.administrar.user.db import crear_tabla as crear_tabla_users
 from src.modules.administrar.user.routes import user_bp
+from src.modules.administrar.validaciones.claim_statuses.db import crear_tabla as crear_tabla_claim_statuses
+from src.modules.administrar.validaciones.claim_statuses.routes import claim_statuses_bp
 from src.modules.administrar.validaciones.insurance_companies.db import (
     crear_tabla as crear_tabla_insurance_companies,
 )
@@ -32,6 +34,7 @@ def _inicializar_tablas():
     # vehicles tiene FK a vehicle_brands; users tiene FK a branches.
     crear_tabla_vehicle_brands()
     crear_tabla_insurance_companies()
+    crear_tabla_claim_statuses()
     crear_tabla_branches()
     crear_tabla_clients()
     crear_tabla_products()
@@ -61,6 +64,7 @@ def create_app():
     app.register_blueprint(validaciones_bp)
     app.register_blueprint(vehicle_brands_bp)
     app.register_blueprint(insurance_companies_bp)
+    app.register_blueprint(claim_statuses_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(siniestros_bp)
 

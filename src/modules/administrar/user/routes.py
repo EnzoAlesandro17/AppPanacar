@@ -13,6 +13,7 @@ from src.modules.administrar.user.logic import (
     listar_usuarios,
     obtener_por_id,
     reactivar_usuario,
+    reordenar_usuarios,
 )
 from src.permissions import puede_gestionar_usuarios
 
@@ -198,3 +199,15 @@ def reactivar(id_usuario):
     reactivar_usuario(id_usuario)
     flash("Usuario reactivado.", "success")
     return redirect(url_for("user.borrados"))
+
+
+@user_bp.route("/reordenar", methods=["POST"])
+@login_required
+def reordenar():
+    redireccion = _requiere_gestion_usuarios()
+    if redireccion:
+        return redireccion
+
+    datos = request.get_json(silent=True) or {}
+    reordenar_usuarios(datos.get("orden", []))
+    return "", 204

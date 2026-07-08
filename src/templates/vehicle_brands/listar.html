@@ -9,13 +9,15 @@
 <table>
     <thead>
         <tr>
+            <th></th>
             <th>Nombre</th>
             <th></th>
         </tr>
     </thead>
-    <tbody>
+    <tbody data-reorder-url="{{ url_for('vehicle_brands.reordenar') }}">
         {% for marca in marcas %}
-        <tr>
+        <tr data-id="{{ marca['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
             <td>{{ marca['name'] }}</td>
             <td>
                 <a href="{{ url_for('vehicle_brands.editar', id_marca=marca['id']) }}">Editar</a>
@@ -27,7 +29,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="2">No hay marcas cargadas.</td></tr>
+        <tr><td colspan="3">No hay marcas cargadas.</td></tr>
         {% endfor %}
     </tbody>
 </table>

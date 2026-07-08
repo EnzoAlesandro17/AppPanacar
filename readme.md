@@ -29,7 +29,8 @@ AppPanacar/
     │   ├── __init__.py
     │   └── connection.py              # Conexión centralizada a SQLite: GestorDB.conectar() y obtener_conexion() (context manager, con foreign_keys ON)
     ├── static/
-    │   └── css/style.css              # Estilos mínimos compartidos por todas las páginas
+    │   ├── css/style.css              # Estilos mínimos compartidos por todas las páginas
+    │   └── js/reorder.js               # Arrastrar y soltar para reordenar listados (único JS del proyecto)
     ├── templates/
     │   ├── base.html                  # Layout común: header con usuario logueado, nav con breadcrumb, mensajes flash
     │   ├── administrar/index.html      # Pantalla principal "Sistema de gestión": Administración, Siniestros, Clientes, Vehículos, Stock
@@ -42,7 +43,8 @@ AppPanacar/
     │   ├── vehicles/{listar,formulario,borrados}.html
     │   ├── validaciones/index.html      # Índice de "Validaciones" con los links a cada catálogo
     │   ├── vehicle_brands/{listar,formulario,borrados}.html
-    │   └── insurance_companies/{listar,formulario,borrados}.html
+    │   ├── insurance_companies/{listar,formulario,borrados}.html
+    │   └── claim_statuses/{listar,formulario,borrados}.html
     └── modules/
         └── administrar/
             ├── __init__.py
@@ -76,15 +78,21 @@ AppPanacar/
                 │   ├── db.py
                 │   ├── logic.py            # CRUD y borrado lógico
                 │   └── routes.py           # Blueprint 'vehicle_brands' (/vehicle-brands)
-                └── insurance_companies/   # Compañías de seguro (catálogo, todavía sin usar desde otro módulo)
+                ├── insurance_companies/   # Compañías de seguro (catálogo, todavía sin usar desde otro módulo)
+                │   ├── db.py
+                │   ├── logic.py            # CRUD y borrado lógico
+                │   └── routes.py           # Blueprint 'insurance_companies' (/insurance-companies)
+                └── claim_statuses/        # Estados de siniestro (catálogo, todavía sin usar desde otro módulo)
                     ├── db.py
                     ├── logic.py            # CRUD y borrado lógico
-                    └── routes.py           # Blueprint 'insurance_companies' (/insurance-companies)
+                    └── routes.py           # Blueprint 'claim_statuses' (/claim-statuses)
 ```
 
 Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
 
-Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos** y **compañías de seguro**. La compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) ya referencia una marca cargada en el catálogo en vez de texto libre; la migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`). Compañías de seguro todavía no está enganchado a ningún otro módulo: la aseguradora va a ir asociada al futuro siniestro (cliente + vehículo + aseguradora), no al cliente directamente — ver RODO.txt.
+Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catálogos de referencia con el mismo patrón CRUD (db/logic/routes): **marcas de vehículos**, **compañías de seguro** y **estados de siniestro**. La compatibilidad de un producto con un vehículo (`product_compatibility.brand_vehicle_id`) ya referencia una marca cargada en el catálogo en vez de texto libre; la migración de `brand_vehicle` (texto) a `brand_vehicle_id` (FK) se hace sola al arrancar la app si detecta el esquema viejo (`crear_tabla_compatibilidad` en `products/db.py`). Compañías de seguro y estados de siniestro todavía no están enganchados a ningún otro módulo: van a ir asociados al futuro módulo de siniestros (cliente + vehículo + aseguradora + estado) — ver RODO.txt.
+
+**Orden editable (arrastrar y soltar)**: sucursales, usuarios, marcas de vehículos, compañías de seguro y estados de siniestro tienen una columna `sort_order` (además de `status`) y se reordenan arrastrando la fila desde el ícono ⠿ de la primera columna. Es el primer y único uso de JavaScript en el proyecto: `src/static/js/reorder.js` (vanilla, sin librerías/CDN — la app debe poder andar offline) usa Pointer Events (no la API nativa de drag-and-drop HTML5, que no anda en touch) para que también funcione en celulares. Al soltar, manda por `fetch` la lista completa de ids en su nuevo orden a un endpoint `POST .../reordenar` de cada blueprint (con el token CSRF vía header `X-CSRFToken`, tomado de `<meta name="csrf-token">` en `base.html`); `reordenar_*` en cada `logic.py` reescribe `sort_order` según la posición recibida. Los registros nuevos se agregan siempre al final (`MAX(sort_order) + 1`). Clientes, productos y vehículos no tienen esto: siguen ordenados por nombre/dominio, ya que son listas que crecen mucho y no tiene sentido ordenarlas a mano.
 
 `vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
 

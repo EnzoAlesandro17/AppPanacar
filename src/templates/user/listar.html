@@ -9,6 +9,7 @@
 <table>
     <thead>
         <tr>
+            <th></th>
             <th>Nombre</th>
             <th>Usuario</th>
             <th>Rol</th>
@@ -16,9 +17,10 @@
             <th></th>
         </tr>
     </thead>
-    <tbody>
+    <tbody data-reorder-url="{{ url_for('user.reordenar') }}">
         {% for usuario in usuarios %}
-        <tr>
+        <tr data-id="{{ usuario['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
             <td>{{ usuario['name'] }} {{ usuario['last_name'] }}</td>
             <td>{{ usuario['username'] or '—' }}</td>
             <td>{{ usuario['role'] }}</td>
@@ -35,7 +37,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay usuarios cargados.</td></tr>
+        <tr><td colspan="6">No hay usuarios cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

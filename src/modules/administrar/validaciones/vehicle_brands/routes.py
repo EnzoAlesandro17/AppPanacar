@@ -10,6 +10,7 @@ from src.modules.administrar.validaciones.vehicle_brands.logic import (
     listar_marcas,
     obtener_por_id,
     reactivar_marca,
+    reordenar_marcas,
 )
 
 vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/vehicle-brands")
@@ -109,3 +110,11 @@ def reactivar(id_marca):
     reactivar_marca(id_marca)
     flash("Marca reactivada.", "success")
     return redirect(url_for("vehicle_brands.borrados"))
+
+
+@vehicle_brands_bp.route("/reordenar", methods=["POST"])
+@login_required
+def reordenar():
+    datos = request.get_json(silent=True) or {}
+    reordenar_marcas(datos.get("orden", []))
+    return "", 204

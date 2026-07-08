@@ -10,6 +10,7 @@ from src.modules.administrar.branches.logic import (
     listar_sucursales,
     obtener_por_id,
     reactivar_sucursal,
+    reordenar_sucursales,
 )
 
 branches_bp = Blueprint("branches", __name__, url_prefix="/branches")
@@ -117,3 +118,11 @@ def reactivar(id_sucursal):
     reactivar_sucursal(id_sucursal)
     flash("Sucursal reactivada.", "success")
     return redirect(url_for("branches.borrados"))
+
+
+@branches_bp.route("/reordenar", methods=["POST"])
+@login_required
+def reordenar():
+    datos = request.get_json(silent=True) or {}
+    reordenar_sucursales(datos.get("orden", []))
+    return "", 204

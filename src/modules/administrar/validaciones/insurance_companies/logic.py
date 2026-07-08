@@ -16,7 +16,13 @@ def crear_aseguradora(name):
 
     with obtener_conexion() as conexion:
         try:
-            cursor = conexion.execute(f"INSERT INTO {TABLA} (name) VALUES (?)", (name,))
+            cursor = conexion.execute(
+                f"""
+                INSERT INTO {TABLA} (name, sort_order)
+                VALUES (?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
+                """,
+                (name,),
+            )
             conexion.commit()
             return cursor.lastrowid
         except sqlite3.IntegrityError as error:
@@ -32,7 +38,7 @@ def listar_aseguradoras(incluir_borrados=False):
     consulta = f"SELECT * FROM {TABLA}"
     if not incluir_borrados:
         consulta += " WHERE status = 1"
-    consulta += " ORDER BY name"
+    consulta += " ORDER BY sort_order"
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta).fetchall()
@@ -64,4 +70,14 @@ def reactivar_aseguradora(id_aseguradora):
     """Revierte un borrado lógico: vuelve a marcar status = 1."""
     with obtener_conexion() as conexion:
         conexion.execute(f"UPDATE {TABLA} SET status = 1 WHERE id = ?", (id_aseguradora,))
+        conexion.commit()
+
+
+def reordenar_aseguradoras(orden_ids):
+    """Reasigna sort_order según el orden recibido (lista de ids), de arriba hacia abajo."""
+    with obtener_conexion() as conexion:
+        for posicion, id_aseguradora in enumerate(orden_ids, start=1):
+            conexion.execute(
+                f"UPDATE {TABLA} SET sort_order = ? WHERE id = ? AND status = 1", (posicion, id_aseguradora)
+            )
         conexion.commit()

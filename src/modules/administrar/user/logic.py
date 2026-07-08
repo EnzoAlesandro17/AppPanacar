@@ -95,8 +95,9 @@ def crear_usuario(name, last_name, dni, code=None, username=None, password=None,
             cursor = conexion.execute(
                 f"""
                 INSERT INTO {TABLA}
-                    (code, name, last_name, dni, username, password, email, birth_date, phone, role, branch_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (code, name, last_name, dni, username, password, email, birth_date, phone, role,
+                     branch_id, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
                 """,
                 (code, name, last_name, dni, username, contrasena_hasheada, email, birth_date,
                  telefono_normalizado, role, branch_id),
@@ -123,7 +124,7 @@ def listar_usuarios(incluir_borrados=False):
     consulta = f"SELECT * FROM {TABLA}"
     if not incluir_borrados:
         consulta += " WHERE status = 1"
-    consulta += " ORDER BY last_name, name"
+    consulta += " ORDER BY sort_order"
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta).fetchall()
@@ -199,6 +200,16 @@ def reactivar_usuario(id_usuario):
     """Revierte un borrado lógico: vuelve a marcar status = 1."""
     with obtener_conexion() as conexion:
         conexion.execute(f"UPDATE {TABLA} SET status = 1 WHERE id = ?", (id_usuario,))
+        conexion.commit()
+
+
+def reordenar_usuarios(orden_ids):
+    """Reasigna sort_order según el orden recibido (lista de ids), de arriba hacia abajo."""
+    with obtener_conexion() as conexion:
+        for posicion, id_usuario in enumerate(orden_ids, start=1):
+            conexion.execute(
+                f"UPDATE {TABLA} SET sort_order = ? WHERE id = ? AND status = 1", (posicion, id_usuario)
+            )
         conexion.commit()
 
 

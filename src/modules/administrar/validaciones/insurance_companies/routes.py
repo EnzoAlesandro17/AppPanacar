@@ -10,6 +10,7 @@ from src.modules.administrar.validaciones.insurance_companies.logic import (
     listar_aseguradoras,
     obtener_por_id,
     reactivar_aseguradora,
+    reordenar_aseguradoras,
 )
 
 insurance_companies_bp = Blueprint("insurance_companies", __name__, url_prefix="/insurance-companies")
@@ -117,3 +118,11 @@ def reactivar(id_aseguradora):
     reactivar_aseguradora(id_aseguradora)
     flash("Compañía de seguro reactivada.", "success")
     return redirect(url_for("insurance_companies.borrados"))
+
+
+@insurance_companies_bp.route("/reordenar", methods=["POST"])
+@login_required
+def reordenar():
+    datos = request.get_json(silent=True) or {}
+    reordenar_aseguradoras(datos.get("orden", []))
+    return "", 204

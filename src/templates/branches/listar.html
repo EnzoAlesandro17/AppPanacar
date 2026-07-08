@@ -9,6 +9,7 @@
 <table>
     <thead>
         <tr>
+            <th></th>
             <th>Nombre</th>
             <th>Código</th>
             <th>Ciudad</th>
@@ -16,9 +17,10 @@
             <th></th>
         </tr>
     </thead>
-    <tbody>
+    <tbody data-reorder-url="{{ url_for('branches.reordenar') }}">
         {% for sucursal in sucursales %}
-        <tr>
+        <tr data-id="{{ sucursal['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
             <td>{{ sucursal['name'] }}</td>
             <td>{{ sucursal['code'] or '—' }}</td>
             <td>{{ sucursal['city'] or '—' }}</td>
@@ -33,7 +35,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay sucursales cargadas.</td></tr>
+        <tr><td colspan="6">No hay sucursales cargadas.</td></tr>
         {% endfor %}
     </tbody>
 </table>

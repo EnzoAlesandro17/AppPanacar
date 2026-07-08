@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Estados de siniestro</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('claim_statuses.nuevo') }}">+ Nuevo estado</a>
+    <a class="btn btn-secondary" href="{{ url_for('claim_statuses.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody data-reorder-url="{{ url_for('claim_statuses.reordenar') }}">
+        {% for estado in estados %}
+        <tr data-id="{{ estado['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
+            <td>{{ estado['name'] }}</td>
+            <td>
+                <a href="{{ url_for('claim_statuses.editar', id_estado=estado['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('claim_statuses.borrar', id_estado=estado['id']) }}"
+                      onsubmit="return confirm('¿Borrar el estado {{ estado['name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3">No hay estados cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

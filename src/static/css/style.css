@@ -273,6 +273,27 @@ td a {
     font-weight: 500;
 }
 
+.col-orden {
+    width: 32px;
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.drag-handle {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+tbody tr.arrastrando {
+    opacity: .5;
+    background: var(--color-bg);
+}
+
 /* Mensajes flash */
 
 .flashes {
