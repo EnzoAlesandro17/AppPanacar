@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>{{ 'Editar usuario' if accion == 'editar' else 'Nuevo usuario' }}</h1>
-<form method="post">
+<form method="post" class="form-card">
     <label>Nombre
         <input type="text" name="name" value="{{ usuario.name or '' if usuario else '' }}" required>
     </label>
@@ -45,7 +45,7 @@
     <label>Teléfono
         <input type="text" name="phone" value="{{ usuario.phone or '' if usuario else '' }}">
     </label>
-    <button type="submit">Guardar</button>
+    <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
 <p><a href="{{ url_for('user.listar') }}">Volver</a></p>
 {% endblock %}

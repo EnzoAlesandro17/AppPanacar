@@ -2,9 +2,9 @@
 
 {% block content %}
 <h1>Clientes</h1>
-<p>
-    <a href="{{ url_for('clients.nuevo') }}">+ Nuevo cliente</a> ·
-    <a href="{{ url_for('clients.borrados') }}">Ver borrados</a>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('clients.nuevo') }}">+ Nuevo cliente</a>
+    <a class="btn btn-secondary" href="{{ url_for('clients.borrados') }}">Ver borrados</a>
 </p>
 <table>
     <thead>
@@ -27,7 +27,7 @@
                 <a href="{{ url_for('clients.editar', id_cliente=cliente['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('clients.borrar', id_cliente=cliente['id']) }}"
                       onsubmit="return confirm('¿Borrar al cliente {{ cliente['name'] }} {{ cliente['last_name'] }}?');" style="display:inline">
-                    <button type="submit">Borrar</button>
+                    <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>
             </td>
         </tr>

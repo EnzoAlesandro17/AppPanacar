@@ -21,7 +21,7 @@ user_bp = Blueprint("user", __name__, url_prefix="/user")
 def _requiere_gestion_usuarios():
     """None si el usuario en sesión puede gestionar usuarios; si no, un redirect listo para devolver."""
     if not puede_gestionar_usuarios(session.get("role")):
-        flash("No tenés permiso para gestionar usuarios.")
+        flash("No tenés permiso para gestionar usuarios.", "error")
         return redirect(url_for("administrar.index"))
     return None
 
@@ -50,7 +50,7 @@ def login():
         try:
             usuario = iniciar_sesion(username, password)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return redirect(url_for("user.login"))
 
         session["user_id"] = usuario["id"]
@@ -89,11 +89,11 @@ def nuevo():
         try:
             crear_usuario(password=password, **datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template(
                 "user/formulario.html", usuario=datos, accion="nueva", roles=ROLES, sucursales=sucursales
             )
-        flash("Usuario creado.")
+        flash("Usuario creado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
@@ -110,7 +110,7 @@ def editar(id_usuario):
 
     usuario = obtener_por_id(id_usuario)
     if usuario is None:
-        flash("El usuario no existe.")
+        flash("El usuario no existe.", "error")
         return redirect(url_for("user.listar"))
 
     sucursales = listar_sucursales()
@@ -122,7 +122,7 @@ def editar(id_usuario):
         try:
             actualizar_usuario(id_usuario, password=password, quitar_branch_id=quitar_branch_id, **datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template(
                 "user/formulario.html",
                 usuario={**datos, "id": id_usuario},
@@ -130,7 +130,7 @@ def editar(id_usuario):
                 roles=ROLES,
                 sucursales=sucursales,
             )
-        flash("Usuario actualizado.")
+        flash("Usuario actualizado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
@@ -146,15 +146,15 @@ def borrar(id_usuario):
         return redireccion
 
     if obtener_por_id(id_usuario) is None:
-        flash("El usuario no existe.")
+        flash("El usuario no existe.", "error")
         return redirect(url_for("user.listar"))
 
     if id_usuario == session.get("user_id"):
-        flash("No podés borrar tu propio usuario.")
+        flash("No podés borrar tu propio usuario.", "error")
         return redirect(url_for("user.listar"))
 
     borrar_usuario(id_usuario)
-    flash("Usuario borrado.")
+    flash("Usuario borrado.", "success")
     return redirect(url_for("user.listar"))
 
 
@@ -177,9 +177,9 @@ def reactivar(id_usuario):
         return redireccion
 
     if obtener_por_id(id_usuario) is None:
-        flash("El usuario no existe.")
+        flash("El usuario no existe.", "error")
         return redirect(url_for("user.borrados"))
 
     reactivar_usuario(id_usuario)
-    flash("Usuario reactivado.")
+    flash("Usuario reactivado.", "success")
     return redirect(url_for("user.borrados"))

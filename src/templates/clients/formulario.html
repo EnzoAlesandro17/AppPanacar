@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>{{ 'Editar cliente' if accion == 'editar' else 'Nuevo cliente' }}</h1>
-<form method="post">
+<form method="post" class="form-card">
     <label>Nombre
         <input type="text" name="name" value="{{ cliente.name or '' if cliente else '' }}" required>
     </label>
@@ -18,7 +18,7 @@
     <label>Email
         <input type="email" name="email" value="{{ cliente.email or '' if cliente else '' }}">
     </label>
-    <button type="submit">Guardar</button>
+    <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
 <p><a href="{{ url_for('clients.listar') }}">Volver</a></p>
 {% endblock %}

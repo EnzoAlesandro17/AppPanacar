@@ -3,9 +3,15 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from src.auth import login_required
 from src.exceptions import ValidationError
 from src.modules.administrar.products.logic import (
+    CONDITIONS,
+    PRODUCT_TYPES,
+    SIDES,
     actualizar_producto,
+    agregar_compatibilidad,
+    borrar_compatibilidad,
     borrar_producto,
     crear_producto,
+    listar_compatibilidad,
     listar_productos,
     obtener_por_id,
     reactivar_producto,
@@ -34,6 +40,14 @@ def _datos_del_form():
         "stock": _parsear_numero(request.form.get("stock", ""), "stock", int),
         "wholesale_price": _parsear_numero(request.form.get("wholesale_price", ""), "wholesale_price", float),
         "retail_price": _parsear_numero(request.form.get("retail_price", ""), "retail_price", float),
+        "product_type": request.form.get("product_type", "").strip(),
+        "oem_code": request.form.get("oem_code", "").strip() or None,
+        "side": request.form.get("side", "").strip() or None,
+        "condition": request.form.get("condition", "").strip() or None,
+        "supplier": request.form.get("supplier", "").strip() or None,
+        "location": request.form.get("location", "").strip() or None,
+        "purchase_date": request.form.get("purchase_date", "").strip() or None,
+        "purchase_price": _parsear_numero(request.form.get("purchase_price", ""), "purchase_price", float),
     }
 
 
@@ -50,14 +64,20 @@ def nuevo():
     if request.method == "POST":
         try:
             datos = _datos_del_form()
-            crear_producto(**datos)
+            id_producto = crear_producto(**datos)
         except ValidationError as error:
-            flash(str(error))
-            return render_template("products/formulario.html", producto=dict(request.form), accion="nueva")
-        flash("Producto creado.")
-        return redirect(url_for("products.listar"))
+            flash(str(error), "error")
+            return render_template(
+                "products/formulario.html", producto=dict(request.form), accion="nueva",
+                product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+            )
+        flash("Producto creado.", "success")
+        return redirect(url_for("products.editar", id_producto=id_producto))
 
-    return render_template("products/formulario.html", producto=None, accion="nueva")
+    return render_template(
+        "products/formulario.html", producto=None, accion="nueva",
+        product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+    )
 
 
 @products_bp.route("/<int:id_producto>/editar", methods=["GET", "POST"])
@@ -65,7 +85,7 @@ def nuevo():
 def editar(id_producto):
     producto = obtener_por_id(id_producto)
     if producto is None:
-        flash("El producto no existe.")
+        flash("El producto no existe.", "error")
         return redirect(url_for("products.listar"))
 
     if request.method == "POST":
@@ -73,25 +93,31 @@ def editar(id_producto):
             datos = _datos_del_form()
             actualizar_producto(id_producto, **datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template(
-                "products/formulario.html", producto=dict(request.form), accion="editar"
+                "products/formulario.html", producto=dict(request.form), accion="editar",
+                product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+                compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
             )
-        flash("Producto actualizado.")
-        return redirect(url_for("products.listar"))
+        flash("Producto actualizado.", "success")
+        return redirect(url_for("products.editar", id_producto=id_producto))
 
-    return render_template("products/formulario.html", producto=dict(producto), accion="editar")
+    return render_template(
+        "products/formulario.html", producto=dict(producto), accion="editar",
+        product_types=PRODUCT_TYPES, conditions=CONDITIONS, sides=SIDES,
+        compatibilidades=listar_compatibilidad(id_producto), id_producto=id_producto,
+    )
 
 
 @products_bp.route("/<int:id_producto>/borrar", methods=["POST"])
 @login_required
 def borrar(id_producto):
     if obtener_por_id(id_producto) is None:
-        flash("El producto no existe.")
+        flash("El producto no existe.", "error")
         return redirect(url_for("products.listar"))
 
     borrar_producto(id_producto)
-    flash("Producto borrado.")
+    flash("Producto borrado.", "success")
     return redirect(url_for("products.listar"))
 
 
@@ -106,9 +132,38 @@ def borrados():
 @login_required
 def reactivar(id_producto):
     if obtener_por_id(id_producto) is None:
-        flash("El producto no existe.")
+        flash("El producto no existe.", "error")
         return redirect(url_for("products.borrados"))
 
     reactivar_producto(id_producto)
-    flash("Producto reactivado.")
+    flash("Producto reactivado.", "success")
     return redirect(url_for("products.borrados"))
+
+
+@products_bp.route("/<int:id_producto>/compatibilidad", methods=["POST"])
+@login_required
+def agregar_compatibilidad_ruta(id_producto):
+    if obtener_por_id(id_producto) is None:
+        flash("El producto no existe.", "error")
+        return redirect(url_for("products.listar"))
+
+    brand_vehicle = request.form.get("brand_vehicle", "").strip()
+    model = request.form.get("model", "").strip()
+    year = _parsear_numero(request.form.get("year", ""), "year", int)
+
+    try:
+        agregar_compatibilidad(id_producto, brand_vehicle, model, year)
+    except ValidationError as error:
+        flash(str(error), "error")
+    else:
+        flash("Compatibilidad agregada.", "success")
+
+    return redirect(url_for("products.editar", id_producto=id_producto))
+
+
+@products_bp.route("/<int:id_producto>/compatibilidad/<int:id_compatibilidad>/borrar", methods=["POST"])
+@login_required
+def borrar_compatibilidad_ruta(id_producto, id_compatibilidad):
+    borrar_compatibilidad(id_compatibilidad)
+    flash("Compatibilidad eliminada.", "success")
+    return redirect(url_for("products.editar", id_producto=id_producto))

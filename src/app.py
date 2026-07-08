@@ -8,6 +8,7 @@ from src.modules.administrar.branches.routes import branches_bp
 from src.modules.administrar.clients.db import crear_tabla as crear_tabla_clients
 from src.modules.administrar.clients.routes import clients_bp
 from src.modules.administrar.products.db import crear_tabla as crear_tabla_products
+from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
 from src.modules.administrar.routes import administrar_bp
 from src.modules.administrar.user.db import crear_tabla as crear_tabla_users
@@ -19,6 +20,7 @@ def _inicializar_tablas():
     crear_tabla_branches()
     crear_tabla_clients()
     crear_tabla_products()
+    crear_tabla_compatibilidad()
     crear_tabla_users()
 
 

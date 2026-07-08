@@ -2,10 +2,10 @@
 
 {% block content %}
 <h1>Administrar</h1>
-<ul>
-    <li><a href="{{ url_for('branches.listar') }}">Sucursales</a></li>
-    <li><a href="{{ url_for('user.listar') }}">Usuarios</a></li>
-    <li><a href="{{ url_for('clients.listar') }}">Clientes</a></li>
-    <li><a href="{{ url_for('products.listar') }}">Productos</a></li>
-</ul>
+<div class="tiles">
+    <a class="tile" href="{{ url_for('branches.listar') }}">Sucursales</a>
+    <a class="tile" href="{{ url_for('user.listar') }}">Usuarios</a>
+    <a class="tile" href="{{ url_for('clients.listar') }}">Clientes</a>
+    <a class="tile" href="{{ url_for('products.listar') }}">Productos</a>
+</div>
 {% endblock %}

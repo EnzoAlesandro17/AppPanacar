@@ -39,9 +39,9 @@ def nuevo():
         try:
             crear_cliente(**datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template("clients/formulario.html", cliente=datos, accion="nueva")
-        flash("Cliente creado.")
+        flash("Cliente creado.", "success")
         return redirect(url_for("clients.listar"))
 
     return render_template("clients/formulario.html", cliente=None, accion="nueva")
@@ -52,7 +52,7 @@ def nuevo():
 def editar(id_cliente):
     cliente = obtener_por_id(id_cliente)
     if cliente is None:
-        flash("El cliente no existe.")
+        flash("El cliente no existe.", "error")
         return redirect(url_for("clients.listar"))
 
     if request.method == "POST":
@@ -60,11 +60,11 @@ def editar(id_cliente):
         try:
             actualizar_cliente(id_cliente, **datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template(
                 "clients/formulario.html", cliente={**datos, "id": id_cliente}, accion="editar"
             )
-        flash("Cliente actualizado.")
+        flash("Cliente actualizado.", "success")
         return redirect(url_for("clients.listar"))
 
     return render_template("clients/formulario.html", cliente=dict(cliente), accion="editar")
@@ -74,11 +74,11 @@ def editar(id_cliente):
 @login_required
 def borrar(id_cliente):
     if obtener_por_id(id_cliente) is None:
-        flash("El cliente no existe.")
+        flash("El cliente no existe.", "error")
         return redirect(url_for("clients.listar"))
 
     borrar_cliente(id_cliente)
-    flash("Cliente borrado.")
+    flash("Cliente borrado.", "success")
     return redirect(url_for("clients.listar"))
 
 
@@ -93,9 +93,9 @@ def borrados():
 @login_required
 def reactivar(id_cliente):
     if obtener_por_id(id_cliente) is None:
-        flash("El cliente no existe.")
+        flash("El cliente no existe.", "error")
         return redirect(url_for("clients.borrados"))
 
     reactivar_cliente(id_cliente)
-    flash("Cliente reactivado.")
+    flash("Cliente reactivado.", "success")
     return redirect(url_for("clients.borrados"))

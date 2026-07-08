@@ -22,7 +22,7 @@
             <td>{{ usuario['branch_id'] or '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('user.reactivar', id_usuario=usuario['id']) }}" style="display:inline">
-                    <button type="submit">Reactivar</button>
+                    <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>
         </tr>

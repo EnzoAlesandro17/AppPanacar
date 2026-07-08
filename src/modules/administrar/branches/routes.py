@@ -41,9 +41,9 @@ def nuevo():
         try:
             crear_sucursal(**datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template("branches/formulario.html", sucursal=datos, accion="nueva")
-        flash("Sucursal creada.")
+        flash("Sucursal creada.", "success")
         return redirect(url_for("branches.listar"))
 
     return render_template("branches/formulario.html", sucursal=None, accion="nueva")
@@ -54,7 +54,7 @@ def nuevo():
 def editar(id_sucursal):
     sucursal = obtener_por_id(id_sucursal)
     if sucursal is None:
-        flash("La sucursal no existe.")
+        flash("La sucursal no existe.", "error")
         return redirect(url_for("branches.listar"))
 
     if request.method == "POST":
@@ -62,11 +62,11 @@ def editar(id_sucursal):
         try:
             actualizar_sucursal(id_sucursal, **datos)
         except ValidationError as error:
-            flash(str(error))
+            flash(str(error), "error")
             return render_template(
                 "branches/formulario.html", sucursal={**datos, "id": id_sucursal}, accion="editar"
             )
-        flash("Sucursal actualizada.")
+        flash("Sucursal actualizada.", "success")
         return redirect(url_for("branches.listar"))
 
     return render_template("branches/formulario.html", sucursal=dict(sucursal), accion="editar")
@@ -76,11 +76,11 @@ def editar(id_sucursal):
 @login_required
 def borrar(id_sucursal):
     if obtener_por_id(id_sucursal) is None:
-        flash("La sucursal no existe.")
+        flash("La sucursal no existe.", "error")
         return redirect(url_for("branches.listar"))
 
     borrar_sucursal(id_sucursal)
-    flash("Sucursal borrada.")
+    flash("Sucursal borrada.", "success")
     return redirect(url_for("branches.listar"))
 
 
@@ -95,9 +95,9 @@ def borrados():
 @login_required
 def reactivar(id_sucursal):
     if obtener_por_id(id_sucursal) is None:
-        flash("La sucursal no existe.")
+        flash("La sucursal no existe.", "error")
         return redirect(url_for("branches.borrados"))
 
     reactivar_sucursal(id_sucursal)
-    flash("Sucursal reactivada.")
+    flash("Sucursal reactivada.", "success")
     return redirect(url_for("branches.borrados"))

@@ -3,12 +3,14 @@
 {% block content %}
 <h1>Productos borrados</h1>
 <p><a href="{{ url_for('products.listar') }}">Volver a productos</a></p>
+<div class="table-scroll">
 <table>
     <thead>
         <tr>
             <th>Código</th>
             <th>Nombre</th>
-            <th>Categoría</th>
+            <th>Tipo</th>
+            <th>OEM</th>
             <th>Stock</th>
             <th>Precio minorista</th>
             <th></th>
@@ -19,18 +21,20 @@
         <tr>
             <td>{{ producto['code'] }}</td>
             <td>{{ producto['name'] }}</td>
-            <td>{{ producto['category'] }}</td>
+            <td>{{ producto['product_type'] }}</td>
+            <td>{{ producto['oem_code'] or '—' }}</td>
             <td>{{ producto['stock'] if producto['stock'] is not none else '—' }}</td>
             <td>{{ producto['retail_price'] }}</td>
             <td>
                 <form method="post" action="{{ url_for('products.reactivar', id_producto=producto['id']) }}" style="display:inline">
-                    <button type="submit">Reactivar</button>
+                    <button type="submit" class="btn btn-success">Reactivar</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">No hay productos borrados.</td></tr>
+        <tr><td colspan="7">No hay productos borrados.</td></tr>
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% endblock %}

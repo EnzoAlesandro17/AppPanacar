@@ -2,9 +2,19 @@
 
 {% block content %}
 <h1>{{ 'Editar producto' if accion == 'editar' else 'Nuevo producto' }}</h1>
-<form method="post">
+<form method="post" class="form-card">
+    <label>Tipo
+        <select name="product_type" required>
+            {% for tipo in product_types %}
+            <option value="{{ tipo }}" {{ 'selected' if producto and producto.product_type == tipo else '' }}>{{ tipo }}</option>
+            {% endfor %}
+        </select>
+    </label>
     <label>Código
         <input type="text" name="code" value="{{ producto.code or '' if producto else '' }}" required>
+    </label>
+    <label>Código OEM / fábrica
+        <input type="text" name="oem_code" value="{{ producto.oem_code or '' if producto else '' }}">
     </label>
     <label>Nombre
         <input type="text" name="name" value="{{ producto.name or '' if producto else '' }}" required>
@@ -12,14 +22,42 @@
     <label>Categoría
         <input type="text" name="category" value="{{ producto.category or '' if producto else '' }}" required>
     </label>
-    <label>Marca
+    <label>Marca (del producto)
         <input type="text" name="brand" value="{{ producto.brand or '' if producto else '' }}" required>
     </label>
     <label>Descripción
         <input type="text" name="description" value="{{ producto.description or '' if producto else '' }}" required>
     </label>
-    <label>Stock (vacío si no aplica, ej: E-SIM)
+    <label>Lado
+        <select name="side">
+            <option value="">— No aplica —</option>
+            {% for lado in sides %}
+            <option value="{{ lado }}" {{ 'selected' if producto and producto.side == lado else '' }}>{{ lado }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Condición
+        <select name="condition">
+            <option value="">— No aplica —</option>
+            {% for cond in conditions %}
+            <option value="{{ cond }}" {{ 'selected' if producto and producto.condition == cond else '' }}>{{ cond }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Proveedor
+        <input type="text" name="supplier" value="{{ producto.supplier or '' if producto else '' }}">
+    </label>
+    <label>Ubicación (depósito/estante)
+        <input type="text" name="location" value="{{ producto.location or '' if producto else '' }}">
+    </label>
+    <label>Stock (vacío si no aplica)
         <input type="number" name="stock" min="0" step="1" value="{{ producto.stock if producto and producto.stock is not none else '' }}">
+    </label>
+    <label>Fecha de compra
+        <input type="date" name="purchase_date" value="{{ producto.purchase_date or '' if producto else '' }}">
+    </label>
+    <label>Precio de compra
+        <input type="number" name="purchase_price" min="0" step="0.01" value="{{ producto.purchase_price if producto and producto.purchase_price is not none else '' }}">
     </label>
     <label>Precio mayorista
         <input type="number" name="wholesale_price" min="0" step="0.01" value="{{ producto.wholesale_price if producto and producto.wholesale_price is not none else '' }}" required>
@@ -27,7 +65,52 @@
     <label>Precio minorista
         <input type="number" name="retail_price" min="0" step="0.01" value="{{ producto.retail_price if producto and producto.retail_price is not none else '' }}" required>
     </label>
-    <button type="submit">Guardar</button>
+    <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
 <p><a href="{{ url_for('products.listar') }}">Volver</a></p>
+
+{% if accion == 'editar' %}
+<h1>Compatibilidad con vehículos</h1>
+<div class="table-scroll">
+<table>
+    <thead>
+        <tr>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Año</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in compatibilidades %}
+        <tr>
+            <td>{{ c['brand_vehicle'] }}</td>
+            <td>{{ c['model'] }}</td>
+            <td>{{ c['year'] or 'Todos' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('products.borrar_compatibilidad_ruta', id_producto=id_producto, id_compatibilidad=c['id']) }}" style="display:inline">
+                    <button type="submit" class="btn btn-danger">Quitar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Sin vehículos compatibles cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<form method="post" action="{{ url_for('products.agregar_compatibilidad_ruta', id_producto=id_producto) }}" class="form-card">
+    <label>Marca del vehículo
+        <input type="text" name="brand_vehicle" required>
+    </label>
+    <label>Modelo
+        <input type="text" name="model" required>
+    </label>
+    <label>Año (vacío = todos los años de ese modelo)
+        <input type="number" name="year" min="1900" step="1">
+    </label>
+    <button type="submit" class="btn btn-secondary">+ Agregar compatibilidad</button>
+</form>
+{% endif %}
 {% endblock %}
