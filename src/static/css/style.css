@@ -434,6 +434,16 @@ body.login-page .form-card button[type="submit"] {
     color: var(--color-text-muted);
 }
 
+.obligatorio {
+    color: var(--color-danger);
+}
+
+.leyenda-obligatorio {
+    margin: -12px 0 16px;
+    font-size: .82rem;
+    color: var(--color-text-muted);
+}
+
 .form-card input,
 .form-card select {
     display: block;

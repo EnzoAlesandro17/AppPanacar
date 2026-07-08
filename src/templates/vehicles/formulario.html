@@ -2,9 +2,10 @@
 
 {% block content %}
 <h1>{{ 'Editar vehículo' if accion == 'editar' else 'Nuevo vehículo' }}</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
 <form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Marca
+    <label>Marca <span class="obligatorio">*</span>
         <select name="brand_id" required>
             <option value="">— Elegir —</option>
             {% for marca in marcas %}
@@ -14,13 +15,13 @@
             {% endfor %}
         </select>
     </label>
-    <label>Modelo
+    <label>Modelo <span class="obligatorio">*</span>
         <input type="text" name="model" value="{{ vehiculo.model or '' if vehiculo else '' }}" required>
     </label>
-    <label>Año
+    <label>Año <span class="obligatorio">*</span>
         <input type="number" name="year" min="1900" step="1" value="{{ vehiculo.year or '' if vehiculo else '' }}" required>
     </label>
-    <label>Dominio
+    <label>Dominio <span class="obligatorio">*</span>
         <input type="text" name="license_plate" value="{{ vehiculo.license_plate or '' if vehiculo else '' }}" required>
     </label>
     <label>Color

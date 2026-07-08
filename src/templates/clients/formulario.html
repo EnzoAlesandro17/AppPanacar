@@ -2,15 +2,16 @@
 
 {% block content %}
 <h1>{{ 'Editar cliente' if accion == 'editar' else 'Nuevo cliente' }}</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
 <form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Nombre
+    <label>Nombre <span class="obligatorio">*</span>
         <input type="text" name="name" value="{{ cliente.name or '' if cliente else '' }}" required>
     </label>
-    <label>Apellido
+    <label>Apellido <span class="obligatorio">*</span>
         <input type="text" name="last_name" value="{{ cliente.last_name or '' if cliente else '' }}" required>
     </label>
-    <label>DNI/CUIT
+    <label>DNI/CUIT <span class="obligatorio">*</span>
         <input type="text" name="dni_cuit" value="{{ cliente.dni_cuit or '' if cliente else '' }}" required>
     </label>
     <label>Teléfono
