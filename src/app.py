@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask
 from flask_wtf import CSRFProtect
 
 from src.cli import registrar_comandos
@@ -50,7 +50,7 @@ def create_app():
 
     @app.context_processor
     def inyectar_app_name():
-        return {"app_name": Settings.APP_NAME}
+        return {"app_name": Settings.APP_NAME, "app_version": Settings.VERSION}
 
     _inicializar_tablas()
     registrar_comandos(app)
@@ -67,9 +67,5 @@ def create_app():
     app.register_blueprint(claim_statuses_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(siniestros_bp)
-
-    @app.route("/")
-    def index():
-        return redirect(url_for("administrar.index"))
 
     return app

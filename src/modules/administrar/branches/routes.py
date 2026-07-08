@@ -13,7 +13,7 @@ from src.modules.administrar.branches.logic import (
     reordenar_sucursales,
 )
 
-branches_bp = Blueprint("branches", __name__, url_prefix="/branches")
+branches_bp = Blueprint("branches", __name__, url_prefix="/sucursales")
 
 
 def _migas(*ultimos):

@@ -13,7 +13,7 @@ from src.modules.administrar.validaciones.vehicle_brands.logic import (
     reordenar_marcas,
 )
 
-vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/vehicle-brands")
+vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/marcas-vehiculos")
 
 
 def _migas(*ultimos):

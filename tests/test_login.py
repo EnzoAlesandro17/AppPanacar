@@ -61,19 +61,19 @@ def test_usuario_borrado_no_puede_iniciar_sesion(app, usuario_creado):
 def test_login_http_exitoso_redirige_a_la_pantalla_principal(client, usuario_creado):
     from tests.conftest import extraer_csrf
 
-    resp = client.get("/user/login")
+    resp = client.get("/usuarios/login")
     token = extraer_csrf(resp.data)
 
     resp = client.post(
-        "/user/login",
+        "/usuarios/login",
         data={"csrf_token": token, "username": "ana", "password": "clave-segura-123"},
     )
 
     assert resp.status_code == 302
-    assert resp.headers["Location"] == "/administrar/"
+    assert resp.headers["Location"] == "/"
 
 
 def test_login_http_sin_csrf_token_devuelve_400(client, usuario_creado):
-    resp = client.post("/user/login", data={"username": "ana", "password": "clave-segura-123"})
+    resp = client.post("/usuarios/login", data={"username": "ana", "password": "clave-segura-123"})
 
     assert resp.status_code == 400

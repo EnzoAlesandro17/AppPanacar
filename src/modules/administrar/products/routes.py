@@ -19,7 +19,7 @@ from src.modules.administrar.products.logic import (
 )
 from src.modules.administrar.validaciones.vehicle_brands.logic import listar_marcas
 
-products_bp = Blueprint("products", __name__, url_prefix="/products")
+products_bp = Blueprint("products", __name__, url_prefix="/stock")
 
 
 def _migas(*ultimos):

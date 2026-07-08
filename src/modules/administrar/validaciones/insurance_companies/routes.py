@@ -13,7 +13,7 @@ from src.modules.administrar.validaciones.insurance_companies.logic import (
     reordenar_aseguradoras,
 )
 
-insurance_companies_bp = Blueprint("insurance_companies", __name__, url_prefix="/insurance-companies")
+insurance_companies_bp = Blueprint("insurance_companies", __name__, url_prefix="/companias-seguro")
 
 
 def _migas(*ultimos):

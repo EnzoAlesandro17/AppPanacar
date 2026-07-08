@@ -17,7 +17,7 @@ from src.modules.administrar.user.logic import (
 )
 from src.permissions import puede_gestionar_usuarios
 
-user_bp = Blueprint("user", __name__, url_prefix="/user")
+user_bp = Blueprint("user", __name__, url_prefix="/usuarios")
 
 
 def _migas(*ultimos):

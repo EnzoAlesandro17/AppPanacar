@@ -13,7 +13,7 @@ from src.modules.administrar.vehicles.logic import (
     reactivar_vehiculo,
 )
 
-vehicles_bp = Blueprint("vehicles", __name__, url_prefix="/vehicles")
+vehicles_bp = Blueprint("vehicles", __name__, url_prefix="/vehiculos")
 
 
 def _migas(*ultimos):

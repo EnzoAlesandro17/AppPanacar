@@ -13,7 +13,7 @@ from src.modules.administrar.validaciones.claim_statuses.logic import (
     reordenar_estados,
 )
 
-claim_statuses_bp = Blueprint("claim_statuses", __name__, url_prefix="/claim-statuses")
+claim_statuses_bp = Blueprint("claim_statuses", __name__, url_prefix="/estados-siniestro")
 
 
 def _migas(*ultimos):

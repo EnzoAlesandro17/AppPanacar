@@ -12,7 +12,7 @@ from src.modules.administrar.clients.logic import (
     reactivar_cliente,
 )
 
-clients_bp = Blueprint("clients", __name__, url_prefix="/clients")
+clients_bp = Blueprint("clients", __name__, url_prefix="/clientes")
 
 
 def _migas(*ultimos):

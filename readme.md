@@ -12,7 +12,7 @@ AppPanacar/
 │   ├── conftest.py                   # Fixtures: app/client con una SQLite temporal por test (aislada de data/database.db), extraer_csrf(), fixture admin logueado
 │   ├── test_validations.py           # Funciones puras de constants/validations.py (CUIT, DNI, email, teléfono, password, dominio, año)
 │   ├── test_breadcrumbs.py           # migas() de src/breadcrumbs.py
-│   ├── test_login.py                 # iniciar_sesion: credenciales, mensaje genérico, bloqueo tras MAX_LOGIN_ATTEMPTS, usuario borrado, y el flujo HTTP /user/login
+│   ├── test_login.py                 # iniciar_sesion: credenciales, mensaje genérico, bloqueo tras MAX_LOGIN_ATTEMPTS, usuario borrado, y el flujo HTTP /usuarios/login
 │   ├── test_branches.py              # CRUD + borrado lógico + reordenar_sucursales, como referencia del patrón repetido en los demás módulos
 │   └── test_reorder_http.py          # Endpoint POST /reordenar por HTTP: aplica el orden, exige CSRF (header) y login
 ├── data/
@@ -56,44 +56,44 @@ AppPanacar/
     └── modules/
         └── administrar/
             ├── __init__.py
-            ├── routes.py               # Blueprint 'administrar': pantalla principal "Sistema de gestión" (/administrar)
+            ├── routes.py               # Blueprint 'administrar': pantalla principal "Sistema de gestión" (/)
             ├── administracion/          # Índice de "Administración" (agrupa sucursales/usuarios/validaciones)
             │   ├── __init__.py
             │   └── routes.py             # Blueprint 'administracion': índice de la sección (/administracion)
             ├── branches/               # Módulo de sucursales
             │   ├── db.py                 # Creación de la tabla branches
             │   ├── logic.py              # CRUD y validaciones de sucursales (alta, edición, borrado lógico, búsqueda)
-            │   └── routes.py             # Blueprint 'branches': vistas HTTP (/branches), CRUD completo (listar/nuevo/editar/borrar/reactivar)
+            │   └── routes.py             # Blueprint 'branches': vistas HTTP (/sucursales), CRUD completo (listar/nuevo/editar/borrar/reactivar)
             ├── clients/                 # Módulo de clientes
             │   ├── db.py                 # Creación de la tabla clients
             │   ├── logic.py              # CRUD y validaciones de clientes (DNI/CUIT, teléfono, email, borrado lógico)
-            │   └── routes.py             # Blueprint 'clients': vistas HTTP (/clients), CRUD completo (listar/nuevo/editar/borrar/reactivar)
+            │   └── routes.py             # Blueprint 'clients': vistas HTTP (/clientes), CRUD completo (listar/nuevo/editar/borrar/reactivar)
             ├── products/                # Módulo de productos
             │   ├── db.py                 # Creación de la tabla products
             │   ├── logic.py              # CRUD, validación de precios mayorista/minorista y manejo de stock (incluye productos sin stock físico)
-            │   └── routes.py             # Blueprint 'products': vistas HTTP (/products), CRUD completo + compatibilidad con vehículos
+            │   └── routes.py             # Blueprint 'products': vistas HTTP (/stock), CRUD completo + compatibilidad con vehículos
             ├── user/                    # Módulo de usuarios
             │   ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
             │   ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
-            │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/user), restringido a Admin/BackOffice salvo login/logout
+            │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/usuarios), restringido a Admin/BackOffice salvo login/logout
             ├── vehicles/                # Módulo de vehículos concretos (no marcas: patente, modelo, año, etc.)
             │   ├── db.py                 # Creación de la tabla vehicles (brand_id FK a vehicle_brands)
             │   ├── logic.py              # CRUD, validación de dominio (patente) y año, borrado lógico
-            │   └── routes.py             # Blueprint 'vehicles': vistas HTTP (/vehicles), CRUD completo
+            │   └── routes.py             # Blueprint 'vehicles': vistas HTTP (/vehiculos), CRUD completo
             └── validaciones/            # Catálogos de referencia usados por otros módulos
                 ├── routes.py              # Blueprint 'validaciones': índice de la sección (/validaciones)
                 ├── vehicle_brands/        # Marcas de vehículos (FK desde product_compatibility)
                 │   ├── db.py
                 │   ├── logic.py            # CRUD y borrado lógico
-                │   └── routes.py           # Blueprint 'vehicle_brands' (/vehicle-brands)
+                │   └── routes.py           # Blueprint 'vehicle_brands' (/marcas-vehiculos)
                 ├── insurance_companies/   # Compañías de seguro (catálogo, todavía sin usar desde otro módulo)
                 │   ├── db.py
                 │   ├── logic.py            # CRUD y borrado lógico
-                │   └── routes.py           # Blueprint 'insurance_companies' (/insurance-companies)
+                │   └── routes.py           # Blueprint 'insurance_companies' (/companias-seguro)
                 └── claim_statuses/        # Estados de siniestro (catálogo, todavía sin usar desde otro módulo)
                     ├── db.py
                     ├── logic.py            # CRUD y borrado lógico
-                    └── routes.py           # Blueprint 'claim_statuses' (/claim-statuses)
+                    └── routes.py           # Blueprint 'claim_statuses' (/estados-siniestro)
 ```
 
 Nota: el frontend HTML recién arranca. Se removió la versión anterior en Tkinter (heredada de la copia del proyecto viejo) y ahora hay una capa web mínima con Flask: cada módulo trae su propio `routes.py` (blueprint) al lado de su `db.py`/`logic.py`, y sus templates viven en `src/templates/<módulo>/`. Sucursales, clientes, productos y usuarios ya tienen CRUD completo desde HTML (listar/nuevo/editar/borrar lógico/reactivar), incluida la compatibilidad de productos con vehículos. Pensado para funcionar en dos sucursales con equipos que no siempre tienen conexión a internet.
@@ -104,7 +104,7 @@ Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catá
 
 `vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
 
-Navegación: la pantalla principal (`/administrar`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios y Validaciones), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes**, **Vehículos** y **Stock** (el módulo `products` por dentro; el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb).
+Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios y Validaciones), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`) y **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
 
 El nav de todas las páginas (`base.html`) muestra un breadcrumb (ej. "Sistema de gestión / Administración / Validaciones / Marcas de vehículos") en vez de un botón fijo "Volver": cada tramo del camino es un link a ese nivel, salvo el último (la página actual). Cada blueprint arma su propio breadcrumb con un helper `_migas(*ultimos)` local en su `routes.py`, apoyado en `migas()` de `src/breadcrumbs.py`.
 

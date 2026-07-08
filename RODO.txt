@@ -151,10 +151,25 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   siniestros/) es por ahora solo una página placeholder ("módulo todavía sin
   diseñar"): el módulo real (cliente + vehículo + aseguradora) sigue
   pendiente de diseño, ver VISIÓN A FUTURO. "Productos" se renombró a
-  "Stock" en el tile, el título de la página y el breadcrumb (el blueprint,
-  las rutas /products y las plantillas products/ por dentro no cambiaron de
-  nombre; "producto" se mantiene para referirse a un ítem individual, ej.
-  "Nuevo producto").
+  "Stock" en el tile, el título de la página, el breadcrumb y la URL
+  (/products -> /stock, ver ítem siguiente); el blueprint y las plantillas
+  products/ por dentro no cambiaron de nombre. "producto" se mantiene para
+  referirse a un ítem individual, ej. "Nuevo producto".
+- Las URLs de toda la app se renombraron para coincidir con el título
+  visible de cada página (antes mezclaban inglés en la URL con español en
+  el título: /administrar -> "Sistema de gestión", /products -> "Stock",
+  /user -> "Usuarios", etc.). Cambio seguro porque todo el código usa
+  url_for(endpoint) y nunca URLs a mano (se confirmó por grep antes de
+  tocar nada). Mapeo final: "Sistema de gestión" pasó de /administrar a la
+  raíz / directamente (se sacó el redirect de app.py, ya no hace falta:
+  administrar_bp ahora se registra sin url_prefix). "Administración" queda
+  en /administracion, "Siniestros" en /siniestros y "Validaciones" en
+  /validaciones (ya coincidían). "Clientes" -> /clientes, "Vehículos" ->
+  /vehiculos, "Stock" -> /stock, "Sucursales" -> /sucursales, "Usuarios" ->
+  /usuarios, "Marcas de vehículos" -> /marcas-vehiculos, "Compañías de
+  seguro" -> /companias-seguro, "Estados de siniestro" -> /estados-siniestro.
+  Por dentro los blueprints, tablas y nombres de módulo NO cambiaron (siguen
+  branches, user, vehicle_brands, etc.), solo el url_prefix de cada uno.
 - Breadcrumb de navegación (src/breadcrumbs.py, función migas): reemplaza el
   link plano "Volver" que había en el nav de todas las páginas (base.html) y
   los links sueltos "Volver"/"Volver a X" que había en cada formulario.html/
@@ -194,6 +209,96 @@ QUÉ SEGUIRÍA HACIENDO
   -> brand_vehicle_id), falta que sea la norma y no la excepción.
 - Un módulo de ventas/movimientos que relacione clients + products + users +
   branches.
+
+
+FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
+---------------------------------------------------------------------
+Plan para probar rendimiento real antes de pagar un servidor: hostear
+primero en la propia PC (Arch Linux, IP pública fija pedida al proveedor
+de internet, no hace falta Dynamic DNS entonces), y después mudar lo mismo
+a una instancia Amazon Linux en AWS sin rehacer nada. Notar que esto decide
+a favor de "servidor central" la pregunta abierta más arriba de DB por
+sucursal vs servidor central: mientras el servidor no sea alcanzable, las
+sucursales quedan sin sistema.
+
+Entorno aislado y portable (Docker):
+  - Se recomienda Docker por dos motivos a la vez: aísla la app del usuario
+    de escritorio de la PC personal (no correr Gunicorn con el usuario de
+    todos los días) y permite mover el mismo contenedor a una instancia
+    Amazon Linux sin rehacer cada paso a mano (Gunicorn, systemd,
+    dependencias) en la máquina nueva. Falta armar: un Dockerfile (imagen
+    base de Python, gunicorn como CMD, la app copiada adentro) y un volumen
+    para data/database.db, para no perder la DB si se recrea el contenedor.
+
+Servidor de aplicación:
+  - Gunicorn en vez de flask run / python app.py: ese es el servidor de
+    desarrollo de Flask, mono-hilo, pensado para no exponerse nunca a
+    internet (tira ese warning en cada arranque).
+  - systemd (o el proceso único dentro del contenedor) para que se reinicie
+    solo si crashea y arranque con la PC.
+
+Reverse proxy + HTTPS:
+  - Caddy (pacman -S caddy en Arch): certificado Let's Encrypt automático,
+    Caddyfile de pocas líneas apuntando a localhost:8000 (Gunicorn). Caddy
+    redirige http -> https por default; confirmarlo igual.
+  - Necesita un dominio (barato) con registro A apuntando a la IP fija.
+
+Red:
+  - Port forwarding en el router: 80 y 443 -> IP interna de la PC.
+  - Firewall de la PC (nftables o ufw, ver archwiki): solo esos dos puertos
+    abiertos hacia afuera, todo lo demás cerrado (incluido el puerto de SSH
+    si se administra remoto — ver seguridad más abajo).
+
+Seguridad a resolver EN EL PROYECTO (código) antes de exponerlo:
+  - SECRET_KEY: hoy tiene fallback hardcodeado ('dev-panacar-secret-key' en
+    src/config.py) si no está seteada la variable de entorno. Generar una
+    real (python -c "import secrets; print(secrets.token_hex(32))") y
+    setearla como variable de entorno del proceso/contenedor, nunca en el
+    repo.
+  - Cookies de sesión: create_app() no fuerza nada hoy. Sumar a la config de
+    Flask: SESSION_COOKIE_SECURE=True (solo viaja por HTTPS),
+    SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax' (buscar
+    "Flask session cookie security" en la doc oficial de Flask).
+  - CREDENCIALES_PRUEBA.txt: ya está en .gitignore, pero antes de exponer la
+    app hay que cambiar esas contraseñas de prueba (admin/panacar2026, etc.)
+    por unas reales, quedaron pensadas solo para desarrollo local.
+  - Debug mode: confirmar que nunca quede en True corriendo expuesto a
+    internet — con la app pública, el debugger interactivo de Werkzeug
+    permite ejecutar código arbitrario si algo tira un error 500, no es solo
+    un detalle cosmético.
+
+Seguridad a resolver EN LA PC / infraestructura (no es código del repo):
+  - Usuario dedicado sin privilegios para correr Gunicorn (no el usuario de
+    escritorio, no root) — o que quede resuelto solo por estar dentro del
+    contenedor Docker.
+  - SSH si se administra remoto: autenticación por clave (no por
+    contraseña) y fail2ban contra fuerza bruta (archwiki: "OpenSSH",
+    "fail2ban").
+  - pacman -Syu regular: la PC va a estar expuesta a internet 24/7 mientras
+    dure la prueba.
+  - Backup de data/database.db: durante la prueba esta PC es el server
+    real; un solo archivo SQLite sin backup es un punto único de falla. Un
+    cron simple que lo copie a otro disco/nube todos los días alcanza para
+    esta etapa.
+
+¿Esto se hace una sola vez o cada vez que se modifica algo?
+  - Gunicorn, systemd, Caddy, dominio, port forwarding y firewall son SETUP
+    DE UNA SOLA VEZ: se arma y queda funcionando solo.
+  - Lo que SÍ se repite cada vez que cambia el código es el "deploy": traer
+    los cambios al servidor y reiniciar el proceso. Con Docker es reconstruir
+    la imagen y reiniciar el contenedor; sin Docker sería git pull + pip
+    install (si cambiaron dependencias) + reiniciar el servicio de systemd.
+    Más adelante conviene un script chico (deploy.sh) que encadene esos
+    pasos en vez de hacerlos a mano cada vez.
+
+¿Postgres desde ya?
+  - Todavía no. SQLite alcanza para esta etapa (2 sucursales, un puñado de
+    dispositivos) y toda la conexión a DB ya está centralizada en
+    src/db/connection.py, lo que acota el esfuerzo de migrar el día que
+    haga falta. La señal real para migrar sería ver, durante esta misma
+    prueba de rendimiento, errores de "database is locked" por escrituras
+    concurrentes desde varias sucursales a la vez — ahí se migra con datos
+    reales en la mano, no antes por las dudas.
 
 
 VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
