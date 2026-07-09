@@ -4,12 +4,14 @@ from src.auth import login_required
 from src.breadcrumbs import migas
 from src.constants.validations import parsear_fecha_visual
 from src.exceptions import ValidationError
+from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.employees.logic import (
     actualizar_empleado,
     borrar_empleado,
     crear_empleado,
     listar_empleados,
     obtener_por_id,
+    obtener_sucursales_ids,
     reactivar_empleado,
 )
 
@@ -31,6 +33,10 @@ def _fecha_nacimiento_del_form():
     return parsear_fecha_visual(cadena) if cadena else None
 
 
+def _branch_ids_del_form():
+    return [int(valor) for valor in request.form.getlist("branch_ids") if valor.strip()]
+
+
 def _datos_del_form():
     return {
         "position": request.form.get("position", "").strip(),
@@ -42,6 +48,7 @@ def _datos_del_form():
         "phone": request.form.get("phone", "").strip() or None,
         "emergency_contact_name": request.form.get("emergency_contact_name", "").strip() or None,
         "emergency_contact_phone": request.form.get("emergency_contact_phone", "").strip() or None,
+        "branch_ids": _branch_ids_del_form(),
     }
 
 
@@ -55,6 +62,8 @@ def listar():
 @employees_bp.route("/nuevo", methods=["GET", "POST"])
 @login_required
 def nuevo():
+    sucursales = listar_sucursales()
+
     if request.method == "POST":
         try:
             datos = _datos_del_form()
@@ -62,14 +71,19 @@ def nuevo():
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "employees/formulario.html", empleado=dict(request.form), accion="nueva",
+                "employees/formulario.html",
+                empleado={**dict(request.form), "id": None},
+                accion="nueva",
+                sucursales=sucursales,
+                sucursales_seleccionadas=_branch_ids_del_form(),
                 migas=_migas("Nuevo empleado"),
             )
         flash("Empleado creado.", "success")
         return redirect(url_for("employees.listar"))
 
     return render_template(
-        "employees/formulario.html", empleado=None, accion="nueva", migas=_migas("Nuevo empleado")
+        "employees/formulario.html", empleado=None, accion="nueva", sucursales=sucursales,
+        sucursales_seleccionadas=[], migas=_migas("Nuevo empleado"),
     )
 
 
@@ -81,6 +95,8 @@ def editar(id_empleado):
         flash("El empleado no existe.", "error")
         return redirect(url_for("employees.listar"))
 
+    sucursales = listar_sucursales()
+
     if request.method == "POST":
         try:
             datos = _datos_del_form()
@@ -88,15 +104,19 @@ def editar(id_empleado):
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "employees/formulario.html", empleado={**dict(request.form), "id": id_empleado},
-                accion="editar", migas=_migas("Editar empleado"),
+                "employees/formulario.html",
+                empleado={**dict(request.form), "id": id_empleado},
+                accion="editar",
+                sucursales=sucursales,
+                sucursales_seleccionadas=_branch_ids_del_form(),
+                migas=_migas("Editar empleado"),
             )
         flash("Empleado actualizado.", "success")
         return redirect(url_for("employees.listar"))
 
     return render_template(
-        "employees/formulario.html", empleado=dict(empleado), accion="editar",
-        migas=_migas("Editar empleado"),
+        "employees/formulario.html", empleado=dict(empleado), accion="editar", sucursales=sucursales,
+        sucursales_seleccionadas=obtener_sucursales_ids(id_empleado), migas=_migas("Editar empleado"),
     )
 
 

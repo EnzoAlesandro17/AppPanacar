@@ -51,9 +51,10 @@ AppPanacar/
     │   ├── base.html                  # Layout común: header con usuario logueado (avatar + dropdown "Mi cuenta"/"Configuración"/"Salir"), nav con breadcrumb, mensajes flash
     │   ├── _macros.html                 # Macro campo_password(): input + botón de ojo, reusado en login/formulario de usuarios
     │   ├── administrar/index.html      # Pantalla principal "Sistema de gestión": Administración, Siniestros, Clientes, Vehículos, Stock
-    │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Usuarios, Empleados, Validaciones y Contabilidad
+    │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Empleados, Usuarios, Validaciones, Contabilidad y Preguntas frecuentes
     │   ├── siniestros/index.html         # Placeholder de "Siniestros" (módulo todavía sin diseñar, ver RODO.txt)
     │   ├── configuracion/index.html      # Placeholder de "Configuración" (todavía vacío, sin diseñar)
+    │   ├── preguntas_frecuentes/index.html # Placeholder de "Preguntas frecuentes" (todavía vacío, sin diseñar)
     │   ├── user/{login,listar,formulario,borrados,perfil}.html
     │   ├── employees/{listar,formulario,borrados}.html
     │   ├── branches/{listar,formulario,borrados}.html
@@ -88,9 +89,11 @@ AppPanacar/
             │   ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
             │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/usuarios) restringido a Admin/BackOffice, más /usuarios/perfil ("Mi cuenta": solo username/password, cualquier rol)
             ├── employees/               # Módulo de empleados: ficha de personal, separada del acceso al sistema
-            │   ├── db.py                 # Creación de la tabla employees (position/name/last_name/dni obligatorios; birth_date/email/phone/contacto de emergencia opcionales)
-            │   ├── logic.py              # CRUD, validaciones (DNI, email, teléfono, mayoría de edad si hay fecha de nacimiento), borrado lógico
-            │   └── routes.py             # Blueprint 'employees': vistas HTTP (/empleados), CRUD completo, dentro de Administración
+            │   ├── db.py                 # Creación de la tabla employees (position/name/last_name/dni obligatorios; birth_date/email/phone/contacto de emergencia opcionales) y de employee_branches (relación N a N con sucursales)
+            │   ├── logic.py              # CRUD, validaciones (DNI, email, teléfono, mayoría de edad si hay fecha de nacimiento), borrado lógico, sincronización de sucursales asociadas
+            │   └── routes.py             # Blueprint 'employees': vistas HTTP (/empleados), CRUD completo, selector múltiple de sucursales, dentro de Administración
+            ├── preguntas_frecuentes/    # Placeholder de "Preguntas frecuentes", dentro de Administración
+            │   └── routes.py             # Blueprint 'preguntas_frecuentes': índice de la sección (/preguntas-frecuentes), todavía sin diseñar
             ├── vehicles/                # Módulo de vehículos concretos (no marcas: patente, modelo, año, etc.)
             │   ├── db.py                 # Creación de la tabla vehicles (brand_id FK a vehicle_brands)
             │   ├── logic.py              # CRUD, validación de dominio (patente) y año, borrado lógico
@@ -119,11 +122,13 @@ Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catá
 
 `vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
 
-Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios, Empleados, Validaciones y Contabilidad), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`), **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb) y, como último tile, ancho y celeste claro, **Links útiles** (`/links-utiles`). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
+Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Empleados, Usuarios, Validaciones, Contabilidad y Preguntas frecuentes — en ese orden, dos por fila), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`), **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb) y, como último tile, ancho y celeste claro, **Links útiles** (`/links-utiles`). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`, `/preguntas-frecuentes`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
 
 **Links útiles** (`src/modules/administrar/informacion_util/` por dentro — el nombre visible cambió de "Información Útil" a "Links útiles" pero el módulo/blueprint/tabla no, mismo criterio que Stock/products) es un catálogo de enlaces con el mismo patrón CRUD + borrado lógico + orden editable (drag & drop) que vehicle_brands/insurance_companies/claim_statuses, con tres campos por entrada: `label` (el texto del botón), `url` (el link) y `observations` (notas libres, opcional). La URL no se muestra como texto en el listado — solo queda en el `href` del botón "Abrir" (se abre en pestaña nueva) — para no tener contraseñas o links sensibles a la vista en la pantalla; la columna de observaciones ocupa el lugar donde antes se mostraba la URL. Por ahora `/links-utiles` es solo el gestor de esas entradas (alta/edición/borrado/reordenar); todavía no existe una pantalla separada que muestre los botones ya armados para clickear, eso queda para más adelante.
 
-**Contabilidad** (`/contabilidad`, dentro de Administración) es, como Siniestros y Configuración, un placeholder vacío sin diseñar todavía.
+**Contabilidad** (`/contabilidad`, dentro de Administración) es, como Siniestros y Configuración, un placeholder vacío sin diseñar todavía. Lo mismo pasa con **Preguntas frecuentes** (`/preguntas-frecuentes`, también dentro de Administración).
+
+`employees` tiene una relación N a N con `branches` a través de `employee_branches` (un empleado puede estar en una sucursal, en varias, o en ninguna): en el formulario de alta/edición es un `<select multiple>` de sucursales, y el listado muestra los nombres separados por coma (`GROUP_CONCAT` en `listar_empleados`). `_sincronizar_sucursales` en `employees/logic.py` reemplaza el set completo en cada guardado; distingue `branch_ids=None` (no tocar las asociaciones existentes, usado en updates parciales) de `branch_ids=[]` (vaciarlas explícitamente).
 
 El avatar del header (dos letras: inicial del nombre + inicial del apellido, `session['iniciales']`) abre un dropdown con **Mi cuenta** (`/usuarios/perfil`), **Configuración** (`/configuracion`, todavía una página vacía sin diseñar) y **Salir**. El nombre y el rol no se muestran sueltos en la barra: solo aparecen como tooltip nativo al pasar el mouse sobre el avatar, y como texto (no clickeable) arriba de los links dentro del dropdown.
 

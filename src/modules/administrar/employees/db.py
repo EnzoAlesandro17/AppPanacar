@@ -1,10 +1,13 @@
 from src.db.connection import obtener_conexion
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 
 TABLA = "employees"
+TABLA_SUCURSALES = "employee_branches"
 
 
 def crear_tabla():
-    """Crea la tabla de empleados si no existe todavía."""
+    """Crea la tabla de empleados y la de su relación con sucursales (un
+    empleado puede estar en una o varias) si no existen todavía."""
     with obtener_conexion() as conexion:
         conexion.execute(
             f"""
@@ -23,4 +26,16 @@ def crear_tabla():
             )
             """
         )
+
+        conexion.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER NOT NULL REFERENCES {TABLA}(id),
+                branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
+                UNIQUE(employee_id, branch_id)
+            )
+            """
+        )
+
         conexion.commit()

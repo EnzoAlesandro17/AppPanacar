@@ -9,6 +9,7 @@
             <th>Puesto</th>
             <th>DNI</th>
             <th>Teléfono</th>
+            <th>Sucursales</th>
             <th></th>
         </tr>
     </thead>
@@ -19,6 +20,7 @@
             <td>{{ empleado['position'] }}</td>
             <td>{{ empleado['dni'] }}</td>
             <td>{{ empleado['phone'] or '—' }}</td>
+            <td>{{ empleado['branch_names'] or '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('employees.reactivar', id_empleado=empleado['id']) }}" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -27,7 +29,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay empleados borrados.</td></tr>
+        <tr><td colspan="6">No hay empleados borrados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

@@ -4,9 +4,10 @@
 <h1>Administración</h1>
 <div class="tiles">
     <a class="tile" href="{{ url_for('branches.listar') }}">Sucursales</a>
-    <a class="tile" href="{{ url_for('user.listar') }}">Usuarios</a>
     <a class="tile" href="{{ url_for('employees.listar') }}">Empleados</a>
+    <a class="tile" href="{{ url_for('user.listar') }}">Usuarios</a>
     <a class="tile" href="{{ url_for('validaciones.index') }}">Validaciones</a>
     <a class="tile" href="{{ url_for('contabilidad.index') }}">Contabilidad</a>
+    <a class="tile" href="{{ url_for('preguntas_frecuentes.index') }}">Preguntas frecuentes</a>
 </div>
 {% endblock %}

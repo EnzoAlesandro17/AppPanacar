@@ -351,6 +351,25 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   <select> para elegir a qué empleado vincular la cuenta (opcional).
   cli.py (create-admin) se simplificó a solo --username/--password, sin
   vincular a ningún empleado (se puede linkear después desde /usuarios).
+- Reorden de tiles de Administración y relación empleados-sucursales:
+  el orden pasó a ser Sucursales/Empleados (primera fila),
+  Usuarios/Validaciones (segunda), Contabilidad/Preguntas frecuentes
+  (tercera) — el grid es de 2 columnas, así que el orden en el HTML es
+  el orden de lectura. Preguntas frecuentes (/preguntas-frecuentes,
+  dentro de Administración) es un placeholder nuevo, mismo patrón que
+  Siniestros/Configuración/Contabilidad ("Todavía no hay nada acá").
+  employees pasó a tener relación N a N con branches, vía tabla nueva
+  employee_branches (employee_id + branch_id, UNIQUE compuesto): un
+  empleado puede estar en una sucursal, en varias o en ninguna — no se
+  usó una FK simple porque el requerimiento explícito era "una o
+  varias". _sincronizar_sucursales() en employees/logic.py borra e
+  inserta de nuevo el set completo en cada guardado (más simple que un
+  diff); distingue branch_ids=None (no tocar nada, para updates
+  parciales) de branch_ids=[] (vaciar explícitamente) usando el None/
+  lista-vacía de Python a propósito. El formulario usa un
+  <select multiple> (sin drag & drop, no hacía falta orden acá); el
+  listado muestra las sucursales asociadas con GROUP_CONCAT en vez de
+  N+1 queries.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -363,8 +382,8 @@ QUÉ SEGUIRÍA HACIENDO
   rol en esos módulos (ej: ¿un Asesor debería poder borrar una marca o
   una sucursal?) y sumarlo a permissions.py como ya existe para usuarios
   (puede_gestionar_usuarios/puede_cambiar_password). Idea concreta: la
-  sección completa de Administración (Sucursales/Usuarios/Empleados/
-  Validaciones/Contabilidad) debería quedar directamente inaccesible para
+  sección completa de Administración (Sucursales/Empleados/Usuarios/
+  Validaciones/Contabilidad/Preguntas frecuentes) debería quedar directamente inaccesible para
   Asesor, no solo con botones ocultos en el template sino bloqueada en el
   propio routes.py de cada vista. /usuarios/perfil (ver QUÉ HICIMOS) ya
   quedó armado para seguir siendo accesible aunque el resto de
@@ -376,7 +395,8 @@ QUÉ SEGUIRÍA HACIENDO
   (label + url) para clickear, no solo el gestor de alta/edición/orden que
   ya existe en /links-utiles.
 - Diseñar qué va adentro de "Contabilidad" (/contabilidad, placeholder
-  vacío por ahora).
+  vacío por ahora) y de "Preguntas frecuentes" (/preguntas-frecuentes,
+  ídem).
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
   escenario sin WiFi?). Todavía sin diseñar a propósito.

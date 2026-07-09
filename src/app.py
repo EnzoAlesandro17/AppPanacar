@@ -16,6 +16,7 @@ from src.modules.administrar.employees.db import crear_tabla as crear_tabla_empl
 from src.modules.administrar.employees.routes import employees_bp
 from src.modules.administrar.informacion_util.db import crear_tabla as crear_tabla_useful_links
 from src.modules.administrar.informacion_util.routes import informacion_util_bp
+from src.modules.administrar.preguntas_frecuentes.routes import preguntas_frecuentes_bp
 from src.modules.administrar.products.db import crear_tabla as crear_tabla_products
 from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
@@ -84,5 +85,6 @@ def create_app():
     app.register_blueprint(contabilidad_bp)
     app.register_blueprint(informacion_util_bp)
     app.register_blueprint(employees_bp)
+    app.register_blueprint(preguntas_frecuentes_bp)
 
     return app

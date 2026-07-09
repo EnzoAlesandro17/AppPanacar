@@ -13,6 +13,7 @@
             <th>Puesto</th>
             <th>DNI</th>
             <th>Teléfono</th>
+            <th>Sucursales</th>
             <th></th>
         </tr>
     </thead>
@@ -23,6 +24,7 @@
             <td>{{ empleado['position'] }}</td>
             <td>{{ empleado['dni'] }}</td>
             <td>{{ empleado['phone'] or '—' }}</td>
+            <td>{{ empleado['branch_names'] or '—' }}</td>
             <td>
                 <a href="{{ url_for('employees.editar', id_empleado=empleado['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('employees.borrar', id_empleado=empleado['id']) }}"
@@ -33,7 +35,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay empleados cargados.</td></tr>
+        <tr><td colspan="6">No hay empleados cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

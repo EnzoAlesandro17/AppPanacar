@@ -10,7 +10,8 @@ from src.constants.validations import (
 )
 from src.db.connection import obtener_conexion
 from src.exceptions import ValidationError
-from src.modules.administrar.employees.db import TABLA
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
+from src.modules.administrar.employees.db import TABLA, TABLA_SUCURSALES
 
 
 def _validar_datos(position, name, last_name, dni, birth_date, email, phone,
@@ -37,8 +38,54 @@ def _traducir_error_integridad(error):
     return ValidationError("Ya existe un empleado con ese DNI.")
 
 
+def _sincronizar_sucursales(conexion, id_empleado, branch_ids):
+    """Reemplaza el set de sucursales asociadas a un empleado por branch_ids.
+    branch_ids=None no toca nada (se usa en updates parciales); una lista
+    vacía borra todas las asociaciones."""
+    if branch_ids is None:
+        return
+
+    for branch_id in branch_ids:
+        sucursal = conexion.execute(
+            f"SELECT id FROM {TABLA_BRANCHES} WHERE id = ? AND status = 1", (branch_id,)
+        ).fetchone()
+        if sucursal is None:
+            raise ValidationError("Una de las sucursales indicadas no existe.")
+
+    conexion.execute(f"DELETE FROM {TABLA_SUCURSALES} WHERE employee_id = ?", (id_empleado,))
+    for branch_id in branch_ids:
+        conexion.execute(
+            f"INSERT INTO {TABLA_SUCURSALES} (employee_id, branch_id) VALUES (?, ?)",
+            (id_empleado, branch_id),
+        )
+
+
+def obtener_sucursales_ids(id_empleado):
+    """Ids de las sucursales asociadas a un empleado."""
+    with obtener_conexion() as conexion:
+        filas = conexion.execute(
+            f"SELECT branch_id FROM {TABLA_SUCURSALES} WHERE employee_id = ?", (id_empleado,)
+        ).fetchall()
+        return [fila["branch_id"] for fila in filas]
+
+
+def obtener_sucursales(id_empleado):
+    """Filas completas de las sucursales asociadas a un empleado (para mostrar nombre, etc.)."""
+    with obtener_conexion() as conexion:
+        return conexion.execute(
+            f"""
+            SELECT {TABLA_BRANCHES}.*
+            FROM {TABLA_SUCURSALES}
+            JOIN {TABLA_BRANCHES} ON {TABLA_BRANCHES}.id = {TABLA_SUCURSALES}.branch_id
+            WHERE {TABLA_SUCURSALES}.employee_id = ?
+            ORDER BY {TABLA_BRANCHES}.name
+            """,
+            (id_empleado,),
+        ).fetchall()
+
+
 def crear_empleado(position, name, last_name, dni, birth_date=None, email=None, phone=None,
-                    emergency_contact_name=None, emergency_contact_phone=None):
+                    emergency_contact_name=None, emergency_contact_phone=None, branch_ids=None):
     """Valida y crea un empleado nuevo. Devuelve el id generado."""
     telefono_normalizado, contacto_telefono_normalizado = _validar_datos(
         position, name, last_name, dni, birth_date, email, phone,
@@ -57,8 +104,10 @@ def crear_empleado(position, name, last_name, dni, birth_date=None, email=None, 
                 (position, name, last_name, dni, birth_date, email, telefono_normalizado,
                  emergency_contact_name, contacto_telefono_normalizado),
             )
+            id_empleado = cursor.lastrowid
+            _sincronizar_sucursales(conexion, id_empleado, branch_ids if branch_ids is not None else [])
             conexion.commit()
-            return cursor.lastrowid
+            return id_empleado
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
 
@@ -69,10 +118,16 @@ def obtener_por_id(id_empleado):
 
 
 def listar_empleados(incluir_borrados=False):
-    consulta = f"SELECT * FROM {TABLA}"
+    consulta = f"""
+        SELECT {TABLA}.*, GROUP_CONCAT({TABLA_BRANCHES}.name, ', ') AS branch_names
+        FROM {TABLA}
+        LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.employee_id = {TABLA}.id
+        LEFT JOIN {TABLA_BRANCHES}
+            ON {TABLA_BRANCHES}.id = {TABLA_SUCURSALES}.branch_id AND {TABLA_BRANCHES}.status = 1
+    """
     if not incluir_borrados:
-        consulta += " WHERE status = 1"
-    consulta += " ORDER BY last_name, name"
+        consulta += f" WHERE {TABLA}.status = 1"
+    consulta += f" GROUP BY {TABLA}.id ORDER BY {TABLA}.last_name, {TABLA}.name"
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta).fetchall()
@@ -80,8 +135,10 @@ def listar_empleados(incluir_borrados=False):
 
 def actualizar_empleado(id_empleado, position=None, name=None, last_name=None, dni=None,
                          birth_date=None, email=None, phone=None,
-                         emergency_contact_name=None, emergency_contact_phone=None):
-    """Actualiza los campos recibidos; los que se pasan en None mantienen su valor actual."""
+                         emergency_contact_name=None, emergency_contact_phone=None, branch_ids=None):
+    """Actualiza los campos recibidos; los que se pasan en None mantienen su
+    valor actual. branch_ids=None mantiene las sucursales actuales; para
+    vaciarlas pasar branch_ids=[]."""
     empleado_actual = obtener_por_id(id_empleado)
     if empleado_actual is None:
         raise ValidationError("El empleado no existe.")
@@ -122,6 +179,7 @@ def actualizar_empleado(id_empleado, position=None, name=None, last_name=None, d
                  nuevos["birth_date"], nuevos["email"], telefono_normalizado,
                  nuevos["emergency_contact_name"], contacto_telefono_normalizado, id_empleado),
             )
+            _sincronizar_sucursales(conexion, id_empleado, branch_ids)
             conexion.commit()
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
