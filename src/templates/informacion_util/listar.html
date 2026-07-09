@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Links útiles</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('informacion_util.nuevo') }}">+ Nuevo enlace</a>
+    <a class="btn btn-secondary" href="{{ url_for('informacion_util.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Texto</th>
+            <th>Observaciones</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody data-reorder-url="{{ url_for('informacion_util.reordenar') }}">
+        {% for enlace in enlaces %}
+        <tr data-id="{{ enlace['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
+            <td>{{ enlace['label'] }}</td>
+            <td>{{ enlace['observations'] or '—' }}</td>
+            <td>
+                <a href="{{ enlace['url'] }}" target="_blank" rel="noopener noreferrer">Abrir</a>
+                <a href="{{ url_for('informacion_util.editar', id_enlace=enlace['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('informacion_util.borrar', id_enlace=enlace['id']) }}"
+                      onsubmit="return confirm('¿Borrar el enlace {{ enlace['label'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">No hay enlaces cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

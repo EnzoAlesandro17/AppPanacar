@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar enlace' if accion == 'editar' else 'Nuevo enlace' }}</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Texto del botón <span class="obligatorio">*</span>
+        <input type="text" name="label" value="{{ enlace.label or '' if enlace else '' }}" required>
+    </label>
+    <label>Link <span class="obligatorio">*</span>
+        <input type="text" name="url" value="{{ enlace.url or '' if enlace else '' }}" placeholder="https://..." required>
+    </label>
+    <label>Observaciones
+        <textarea name="observations">{{ enlace.observations or '' if enlace else '' }}</textarea>
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+{% endblock %}

@@ -299,6 +299,17 @@ body.login-page main {
     box-shadow: 0 2px 8px rgba(37, 99, 235, .12);
 }
 
+.tile-ancho {
+    grid-column: 1 / -1;
+    padding: 10px 20px;
+    background: #eaf4ff;
+    border-color: #bfdbfe;
+}
+
+.tile-ancho:hover {
+    background: #ddedff;
+}
+
 /* Tablas */
 
 .table-scroll {
@@ -446,7 +457,8 @@ body.login-page .form-card button[type="submit"] {
 }
 
 .form-card input,
-.form-card select {
+.form-card select,
+.form-card textarea {
     display: block;
     width: 100%;
     margin-top: 6px;
@@ -458,8 +470,14 @@ body.login-page .form-card button[type="submit"] {
     color: var(--color-text);
 }
 
+.form-card textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
 .form-card input:focus,
-.form-card select:focus {
+.form-card select:focus,
+.form-card textarea:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);

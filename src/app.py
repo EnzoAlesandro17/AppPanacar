@@ -11,6 +11,9 @@ from src.modules.administrar.branches.routes import branches_bp
 from src.modules.administrar.clients.db import crear_tabla as crear_tabla_clients
 from src.modules.administrar.clients.routes import clients_bp
 from src.modules.administrar.configuracion.routes import configuracion_bp
+from src.modules.administrar.contabilidad.routes import contabilidad_bp
+from src.modules.administrar.informacion_util.db import crear_tabla as crear_tabla_useful_links
+from src.modules.administrar.informacion_util.routes import informacion_util_bp
 from src.modules.administrar.products.db import crear_tabla as crear_tabla_products
 from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
@@ -43,6 +46,7 @@ def _inicializar_tablas():
     crear_tabla_compatibilidad()
     crear_tabla_vehicles()
     crear_tabla_users()
+    crear_tabla_useful_links()
 
 
 def create_app():
@@ -72,5 +76,7 @@ def create_app():
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(siniestros_bp)
     app.register_blueprint(configuracion_bp)
+    app.register_blueprint(contabilidad_bp)
+    app.register_blueprint(informacion_util_bp)
 
     return app

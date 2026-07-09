@@ -288,6 +288,29 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
   alguien ya tenía una sesión abierta de antes de este cambio, el avatar
   le va a aparecer vacío hasta el próximo login (session['iniciales'] no
   existía en sesiones viejas) — no rompe nada, se autoresuelve solo.
+- Links útiles (nombre visible; se llamó "Información Útil" al principio
+  del mismo día y se renombró — src/modules/administrar/informacion_util/,
+  tabla useful_links, blueprint informacion_util_bp, url /links-utiles:
+  el módulo/blueprint/tabla se quedaron con el nombre viejo por dentro,
+  mismo criterio que Stock/products). Catálogo de enlaces con el mismo
+  patrón que vehicle_brands (CRUD + borrado lógico + reordenar_enlaces con
+  drag & drop), con tres campos por fila: label (texto del botón), url y
+  observations (notas libres, opcional, columna agregada después con
+  migración ALTER TABLE porque la tabla ya existía). La URL no se muestra
+  como texto en el listado (columna reemplazada por "Observaciones") —
+  sigue en el href del botón "Abrir" (abre en pestaña nueva,
+  target="_blank" rel="noopener noreferrer"), para no dejar links o
+  contraseñas sensibles a la vista en la pantalla del listado. Sin
+  validación de formato de URL a propósito (solo obligatorio no vacío),
+  para no complicar de más algo que el usuario puede simplemente corregir
+  si lo carga mal.
+  En la pantalla principal es un tile distinto a los demás: ancho completo
+  (grid-column: 1 / -1, ocupa las dos columnas) y de la mitad de alto
+  (menos padding vertical), celeste clarito (#eaf4ff) en vez del blanco de
+  los otros tiles — clase .tile-ancho en style.css.
+- Contabilidad (/contabilidad, dentro de Administración): mismo patrón
+  placeholder que Siniestros y Configuración, todavía "Todavía no hay nada
+  acá".
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -305,6 +328,11 @@ QUÉ SEGUIRÍA HACIENDO
   ocultos en el template sino bloqueada en el propio routes.py de cada
   vista. /usuarios/perfil (ver QUÉ HICIMOS) ya quedó armado para seguir
   siendo accesible aunque el resto de Administración se bloquee.
+- Pantalla de "Links útiles" que de verdad muestre los botones cargados
+  (label + url) para clickear, no solo el gestor de alta/edición/orden que
+  ya existe en /links-utiles.
+- Diseñar qué va adentro de "Contabilidad" (/contabilidad, placeholder
+  vacío por ahora).
 - Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
   (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
   escenario sin WiFi?). Todavía sin diseñar a propósito.
