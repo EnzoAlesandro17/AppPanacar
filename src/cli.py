@@ -9,21 +9,16 @@ def registrar_comandos(app):
 
 
 @click.command("create-admin")
-@click.option("--name", prompt="Nombre")
-@click.option("--last-name", prompt="Apellido")
-@click.option("--dni", prompt="DNI")
 @click.option("--username", prompt="Usuario")
 @click.option("--password", prompt="Contraseña", hide_input=True, confirmation_prompt=True)
-def create_admin(name, last_name, dni, username, password):
+def create_admin(username, password):
     """Crea el primer usuario Admin (bootstrap), sin depender de la UI.
 
     Necesario porque /usuarios/nuevo ya exige estar logueado como Admin/BackOffice.
+    Sin vincular a ningún empleado; se puede linkear después desde /usuarios.
     """
     try:
-        id_usuario = crear_usuario(
-            name=name, last_name=last_name, dni=dni,
-            username=username, password=password, role="Admin",
-        )
+        id_usuario = crear_usuario(username=username, password=password, role="Admin")
     except ValidationError as error:
         raise click.ClickException(str(error))
 

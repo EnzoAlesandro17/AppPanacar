@@ -41,10 +41,7 @@ def admin(client):
     """Crea un Admin directo en la base (sin pasar por /usuarios/nuevo) y lo loguea. Devuelve el client logueado."""
     from src.modules.administrar.user.logic import crear_usuario
 
-    crear_usuario(
-        name="Admin", last_name="Test", dni="20000000",
-        username="admin_test", password="clave-segura-123", role="Admin",
-    )
+    crear_usuario(username="admin_test", password="clave-segura-123", role="Admin")
 
     resp = client.get("/usuarios/login")
     token = extraer_csrf(resp.data)
@@ -61,10 +58,7 @@ def asesor(client):
     """Crea un Asesor (sin permiso de gestión de usuarios) y lo loguea. Devuelve el client logueado."""
     from src.modules.administrar.user.logic import crear_usuario
 
-    crear_usuario(
-        name="Ana", last_name="Asesora", dni="20000001",
-        username="asesor_test", password="clave-segura-123", role="Asesor",
-    )
+    crear_usuario(username="asesor_test", password="clave-segura-123", role="Asesor")
 
     resp = client.get("/usuarios/login")
     token = extraer_csrf(resp.data)

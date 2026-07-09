@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import campo_password %}
+
+{% block content %}
+<h1>Mi cuenta</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Usuario <span class="obligatorio">*</span>
+        <input type="text" name="username" value="{{ usuario.username or '' if usuario else '' }}" required>
+    </label>
+    {{ campo_password('password_actual', 'campo-password-actual', 'Contraseña actual (solo para cambiar la contraseña)') }}
+    {{ campo_password('password', 'campo-password-nueva', 'Contraseña nueva (dejar vacío para no cambiarla)') }}
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+{% endblock %}

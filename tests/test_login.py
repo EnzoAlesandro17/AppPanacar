@@ -7,10 +7,7 @@ from src.exceptions import ValidationError
 def usuario_creado(app):
     from src.modules.administrar.user.logic import crear_usuario
 
-    crear_usuario(
-        name="Ana", last_name="Perez", dni="30111222",
-        username="ana", password="clave-segura-123", role="Asesor",
-    )
+    crear_usuario(username="ana", password="clave-segura-123", role="Asesor")
 
 
 def test_iniciar_sesion_con_credenciales_correctas(app, usuario_creado):

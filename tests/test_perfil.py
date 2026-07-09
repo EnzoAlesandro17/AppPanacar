@@ -1,9 +1,8 @@
+from src.db.connection import obtener_conexion
 from tests.conftest import extraer_csrf
 
 
 def _id_por_username(username):
-    from src.db.connection import obtener_conexion
-
     with obtener_conexion() as conexion:
         return conexion.execute(
             "SELECT id FROM users WHERE username = ?", (username,)
@@ -27,57 +26,54 @@ def test_asesor_no_puede_entrar_a_editar_otro_usuario(asesor):
     assert resp.headers["Location"] == "/"
 
 
-def test_perfil_no_muestra_el_campo_rol(asesor):
+def test_perfil_no_muestra_campos_que_no_le_corresponden(asesor):
+    """Rol y empleado vinculado se editan desde /usuarios (Admin/BackOffice),
+    no desde la autogestión — acá solo hay usuario y contraseña."""
     resp = asesor.get("/usuarios/perfil")
 
     assert b'name="role"' not in resp.data
+    assert b'name="employee_id"' not in resp.data
 
 
-def test_perfil_actualiza_datos_propios(asesor):
+def test_perfil_actualiza_el_propio_username(asesor):
     resp = asesor.get("/usuarios/perfil")
     token = extraer_csrf(resp.data)
 
-    asesor.post(
+    resp = asesor.post(
         "/usuarios/perfil",
-        data={
-            "csrf_token": token, "name": "Ana", "last_name": "Editada",
-            "dni": "20000001", "phone": "3415551234",
-        },
+        data={"csrf_token": token, "username": "asesor_editado"},
         follow_redirects=True,
     )
 
-    from src.db.connection import obtener_conexion
+    assert b"Tus datos se actualizaron" in resp.data
     with obtener_conexion() as conexion:
         fila = conexion.execute(
-            "SELECT last_name, phone FROM users WHERE username = 'asesor_test'"
+            "SELECT username FROM users WHERE id = ?", (_id_por_username("asesor_editado"),)
         ).fetchone()
-
-    assert fila["last_name"] == "Editada"
-    assert fila["phone"] == "3415551234"
+    assert fila["username"] == "asesor_editado"
 
 
-def test_perfil_ignora_intento_de_escalar_rol_y_sucursal(asesor):
-    """Aunque se mande role/branch_id a mano (form manipulado), no deben tocarse."""
+def test_perfil_ignora_intento_de_escalar_rol_o_vincularse_a_un_empleado(asesor):
+    """Aunque se mande role/employee_id a mano (form manipulado), no deben tocarse."""
+    id_asesor = _id_por_username("asesor_test")
     resp = asesor.get("/usuarios/perfil")
     token = extraer_csrf(resp.data)
 
     asesor.post(
         "/usuarios/perfil",
         data={
-            "csrf_token": token, "name": "Ana", "last_name": "Asesora",
-            "dni": "20000001", "role": "Admin", "branch_id": "999",
+            "csrf_token": token, "username": "asesor_test", "role": "Admin", "employee_id": "999",
         },
         follow_redirects=True,
     )
 
-    from src.db.connection import obtener_conexion
     with obtener_conexion() as conexion:
         fila = conexion.execute(
-            "SELECT role, branch_id FROM users WHERE username = 'asesor_test'"
+            "SELECT role, employee_id FROM users WHERE id = ?", (id_asesor,)
         ).fetchone()
 
     assert fila["role"] == "Asesor"
-    assert fila["branch_id"] is None
+    assert fila["employee_id"] is None
 
 
 def test_perfil_requiere_login(client):
@@ -94,7 +90,7 @@ def test_perfil_cambia_password_con_la_actual_correcta(asesor):
     resp = asesor.post(
         "/usuarios/perfil",
         data={
-            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "csrf_token": token, "username": "asesor_test",
             "password": "nueva-clave-999", "password_actual": "clave-segura-123",
         },
         follow_redirects=True,
@@ -113,10 +109,7 @@ def test_perfil_rechaza_cambio_de_password_sin_la_actual(asesor):
 
     resp = asesor.post(
         "/usuarios/perfil",
-        data={
-            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
-            "password": "nueva-clave-999",
-        },
+        data={"csrf_token": token, "username": "asesor_test", "password": "nueva-clave-999"},
         follow_redirects=True,
     )
 
@@ -135,35 +128,10 @@ def test_perfil_rechaza_cambio_de_password_con_la_actual_incorrecta(asesor):
     resp = asesor.post(
         "/usuarios/perfil",
         data={
-            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
+            "csrf_token": token, "username": "asesor_test",
             "password": "nueva-clave-999", "password_actual": "algo-incorrecto",
         },
         follow_redirects=True,
     )
 
     assert b"contrase\xc3\xb1a actual no es correcta" in resp.data
-
-
-def test_perfil_guarda_fecha_de_nacimiento_en_iso_desde_formato_visual(asesor):
-    resp = asesor.get("/usuarios/perfil")
-    token = extraer_csrf(resp.data)
-
-    asesor.post(
-        "/usuarios/perfil",
-        data={
-            "csrf_token": token, "name": "Ana", "last_name": "Asesora", "dni": "20000001",
-            "birth_date": "15/03/1990",
-        },
-        follow_redirects=True,
-    )
-
-    from src.db.connection import obtener_conexion
-    with obtener_conexion() as conexion:
-        fila = conexion.execute(
-            "SELECT birth_date FROM users WHERE username = 'asesor_test'"
-        ).fetchone()
-
-    assert fila["birth_date"] == "1990-03-15"
-
-    resp = asesor.get("/usuarios/perfil")
-    assert b'value="15/03/1990"' in resp.data

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Empleados</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('employees.nuevo') }}">+ Nuevo empleado</a>
+    <a class="btn btn-secondary" href="{{ url_for('employees.borrados') }}">Ver borrados</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Puesto</th>
+            <th>DNI</th>
+            <th>Teléfono</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for empleado in empleados %}
+        <tr>
+            <td>{{ empleado['name'] }} {{ empleado['last_name'] }}</td>
+            <td>{{ empleado['position'] }}</td>
+            <td>{{ empleado['dni'] }}</td>
+            <td>{{ empleado['phone'] or '—' }}</td>
+            <td>
+                <a href="{{ url_for('employees.editar', id_empleado=empleado['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('employees.borrar', id_empleado=empleado['id']) }}"
+                      onsubmit="return confirm('¿Borrar al empleado {{ empleado['name'] }} {{ empleado['last_name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay empleados cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

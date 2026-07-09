@@ -2,9 +2,9 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 
 from src.auth import login_required
 from src.breadcrumbs import migas
-from src.constants.validations import parsear_fecha_visual
 from src.exceptions import ValidationError
-from src.modules.administrar.branches.logic import listar_sucursales
+from src.modules.administrar.employees.logic import listar_empleados
+from src.modules.administrar.employees.logic import obtener_por_id as obtener_empleado_por_id
 from src.modules.administrar.user.logic import (
     ROLES,
     actualizar_usuario,
@@ -40,48 +40,32 @@ def _requiere_gestion_usuarios():
     return None
 
 
-def _fecha_nacimiento_del_form():
-    cadena = request.form.get("birth_date", "").strip()
-    return parsear_fecha_visual(cadena) if cadena else None
-
-
 def _datos_del_form():
-    branch_id = request.form.get("branch_id", "").strip()
+    employee_id = request.form.get("employee_id", "").strip()
     return {
-        "name": request.form.get("name", "").strip(),
-        "last_name": request.form.get("last_name", "").strip(),
-        "dni": request.form.get("dni", "").strip(),
-        "code": request.form.get("code", "").strip() or None,
-        "username": request.form.get("username", "").strip() or None,
-        "email": request.form.get("email", "").strip() or None,
-        "birth_date": _fecha_nacimiento_del_form(),
-        "phone": request.form.get("phone", "").strip() or None,
+        "username": request.form.get("username", "").strip(),
         "role": request.form.get("role", "").strip(),
-        "branch_id": int(branch_id) if branch_id else None,
+        "employee_id": int(employee_id) if employee_id else None,
     }
 
 
-def _datos_del_form_perfil():
-    """Como _datos_del_form pero sin role/branch_id: la autogestión nunca
-    puede tocar esos dos campos, solo la edición desde /usuarios (Admin/
-    BackOffice). Se arma a propósito como función separada, no filtrando el
-    dict de _datos_del_form, para que sea imposible colar esos campos por
-    error en el futuro."""
-    return {
-        "name": request.form.get("name", "").strip(),
-        "last_name": request.form.get("last_name", "").strip(),
-        "dni": request.form.get("dni", "").strip(),
-        "code": request.form.get("code", "").strip() or None,
-        "username": request.form.get("username", "").strip() or None,
-        "email": request.form.get("email", "").strip() or None,
-        "birth_date": _fecha_nacimiento_del_form(),
-        "phone": request.form.get("phone", "").strip() or None,
-    }
+def _iniciales(texto, texto2=""):
+    """Dos letras para el avatar del header."""
+    if texto2:
+        return (texto[0] + texto2[0]).upper()
+    return texto[:2].upper()
 
 
-def _iniciales(name, last_name):
-    """Dos letras para el avatar del header: inicial del nombre + inicial del apellido."""
-    return (name[0] + last_name[0]).upper()
+def _nombre_sesion(usuario):
+    """(nombre_para_mostrar, iniciales) para guardar en la sesión al loguearse.
+
+    Si el usuario tiene un empleado vinculado usa su nombre/apellido; si no
+    (login sin empleado, ej. una cuenta técnica), usa el username."""
+    if usuario["employee_id"]:
+        empleado = obtener_empleado_por_id(usuario["employee_id"])
+        if empleado is not None:
+            return f"{empleado['name']} {empleado['last_name']}", _iniciales(empleado["name"], empleado["last_name"])
+    return usuario["username"], _iniciales(usuario["username"])
 
 
 @user_bp.route("/login", methods=["GET", "POST"])
@@ -95,9 +79,10 @@ def login():
             flash(str(error), "error")
             return redirect(url_for("user.login"))
 
+        nombre, iniciales = _nombre_sesion(usuario)
         session["user_id"] = usuario["id"]
-        session["name"] = f"{usuario['name']} {usuario['last_name']}"
-        session["iniciales"] = _iniciales(usuario["name"], usuario["last_name"])
+        session["name"] = nombre
+        session["iniciales"] = iniciales
         session["role"] = usuario["role"]
         return redirect(url_for("administrar.index"))
 
@@ -124,7 +109,7 @@ def nuevo():
     if redireccion:
         return redireccion
 
-    sucursales = listar_sucursales()
+    empleados = listar_empleados()
 
     if request.method == "POST":
         password = request.form.get("password", "").strip() or None
@@ -135,13 +120,13 @@ def nuevo():
             flash(str(error), "error")
             return render_template(
                 "user/formulario.html", usuario=dict(request.form), accion="nueva", roles=ROLES,
-                sucursales=sucursales, migas=_migas("Nuevo usuario"),
+                empleados=empleados, migas=_migas("Nuevo usuario"),
             )
         flash("Usuario creado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
-        "user/formulario.html", usuario=None, accion="nueva", roles=ROLES, sucursales=sucursales,
+        "user/formulario.html", usuario=None, accion="nueva", roles=ROLES, empleados=empleados,
         migas=_migas("Nuevo usuario"),
     )
 
@@ -158,14 +143,14 @@ def editar(id_usuario):
         flash("El usuario no existe.", "error")
         return redirect(url_for("user.listar"))
 
-    sucursales = listar_sucursales()
+    empleados = listar_empleados()
 
     if request.method == "POST":
         password = request.form.get("password", "").strip() or None
-        quitar_branch_id = not request.form.get("branch_id", "").strip()
+        quitar_employee_id = not request.form.get("employee_id", "").strip()
         try:
             datos = _datos_del_form()
-            actualizar_usuario(id_usuario, password=password, quitar_branch_id=quitar_branch_id, **datos)
+            actualizar_usuario(id_usuario, password=password, quitar_employee_id=quitar_employee_id, **datos)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -173,14 +158,14 @@ def editar(id_usuario):
                 usuario={**dict(request.form), "id": id_usuario},
                 accion="editar",
                 roles=ROLES,
-                sucursales=sucursales,
+                empleados=empleados,
                 migas=_migas("Editar usuario"),
             )
         flash("Usuario actualizado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
-        "user/formulario.html", usuario=dict(usuario), accion="editar", roles=ROLES, sucursales=sucursales,
+        "user/formulario.html", usuario=dict(usuario), accion="editar", roles=ROLES, empleados=empleados,
         migas=_migas("Editar usuario"),
     )
 
@@ -247,40 +232,39 @@ def reordenar():
 @user_bp.route("/perfil", methods=["GET", "POST"])
 @login_required
 def perfil():
-    """Autogestión: cualquier usuario logueado edita sus propios datos,
-    sin pasar por _requiere_gestion_usuarios (a diferencia de /editar).
-    Nunca recibe ni toca role/branch_id (ver _datos_del_form_perfil) para
-    que nadie pueda subirse de rol editando su propia cuenta."""
+    """Autogestión: solo usuario y contraseña. Los datos personales viven en
+    Empleados (Administración), no acá — la separación es a propósito."""
     usuario = obtener_por_id(session["user_id"])
     if usuario is None:
         flash("Tu usuario no existe.", "error")
         return redirect(url_for("user.logout"))
 
     if request.method == "POST":
+        username = request.form.get("username", "").strip()
         password_nueva = request.form.get("password", "").strip() or None
         password_actual = request.form.get("password_actual", "").strip() or None
         try:
-            datos = _datos_del_form_perfil()
             if password_nueva:
                 if not password_actual or not verificar_contrasena(usuario["username"], password_actual):
                     raise ValidationError("La contraseña actual no es correcta.")
-            actualizar_usuario(session["user_id"], password=password_nueva, **datos)
+            actualizar_usuario(session["user_id"], username=username, password=password_nueva)
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
-                "user/formulario.html",
+                "user/perfil.html",
                 usuario={**dict(request.form), "id": session["user_id"]},
-                accion="perfil",
                 migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
             )
-        session["name"] = f"{datos['name']} {datos['last_name']}"
-        session["iniciales"] = _iniciales(datos["name"], datos["last_name"])
+
+        usuario_actualizado = obtener_por_id(session["user_id"])
+        nombre, iniciales = _nombre_sesion(usuario_actualizado)
+        session["name"] = nombre
+        session["iniciales"] = iniciales
         flash("Tus datos se actualizaron.", "success")
         return redirect(url_for("user.perfil"))
 
     return render_template(
-        "user/formulario.html",
+        "user/perfil.html",
         usuario=dict(usuario),
-        accion="perfil",
         migas=migas(("Sistema de gestión", "administrar.index"), "Mi cuenta"),
     )

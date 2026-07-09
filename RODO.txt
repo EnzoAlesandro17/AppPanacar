@@ -311,6 +311,46 @@ Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
 - Contabilidad (/contabilidad, dentro de Administración): mismo patrón
   placeholder que Siniestros y Configuración, todavía "Todavía no hay nada
   acá".
+- Separación Usuarios (acceso) / Empleados (personal): antes `users`
+  mezclaba las dos cosas (nombre/DNI/email/teléfono/fecha de nacimiento/
+  sucursal junto con username/password/rol). Se separó en dos módulos:
+    - employees (src/modules/administrar/employees/, tabla employees,
+      /empleados dentro de Administración): Puesto, Nombre, Apellido y DNI
+      obligatorios; fecha de nacimiento, email, teléfono y contacto de
+      emergencia (nombre + teléfono) opcionales. CRUD simple con borrado
+      lógico, sin orden editable (como clients, no como los catálogos
+      chicos). Es una lista exclusiva del área administrativa/contabilidad,
+      no algo que un Asesor necesite ver (todavía no hay permisos por
+      módulo para reforzar esto, ver ítem de controles de permiso).
+    - users quedó reducido a username, password, role y employee_id
+      (FK opcional a employees — "o no", el vínculo es opcional a
+      propósito). username y password ahora son siempre obligatorios (antes
+      podían dejarse los dos vacíos); ya no tiene sentido un "usuario" sin
+      login, esa persona es directamente un empleado sin cuenta.
+  Migración one-shot en user/db.py: como dni y code tenían UNIQUE, SQLite
+  no permite ALTER TABLE ... DROP COLUMN sobre esas columnas (a diferencia
+  de branch_id o brand_vehicle en migraciones anteriores, que sí se
+  pudieron dropear directo) — hubo que reconstruir la tabla entera
+  (RENAME a users_viejo, CREATE TABLE nueva, migrar cada fila vieja a un
+  employee nuevo con position="Sin especificar" a completar después, copiar
+  a la tabla nueva solo las filas que ya tenían username+password
+  cargados —las que no, quedan solo como empleados—, preservando los ids
+  originales, DROP de la tabla vieja). Corrida y verificada contra la base
+  real de dev: los 3 usuarios reales (admin, asesor_test, Enzo) migraron
+  bien, con sus datos personales intactos en employees y el login
+  funcionando. Ojo: esta migración corrió una vez contra la base real
+  ANTES de que se hiciera un backup (se verificó por probar que la app
+  levantaba, sin pensar que eso ya disparaba la migración) — salió bien
+  esta vez, pero la próxima vez que se toque algo así de sensible, backup
+  primero, verificar después.
+  session['name']/session['iniciales'] ahora se calculan en login() y en
+  /usuarios/perfil buscando el empleado vinculado (si hay employee_id);
+  si no hay empleado vinculado, usa el username como respaldo (_iniciales
+  con fallback a las primeras 2 letras del username). El formulario admin
+  de usuarios (/usuarios/nuevo, /usuarios/<id>/editar) ahora tiene un
+  <select> para elegir a qué empleado vincular la cuenta (opcional).
+  cli.py (create-admin) se simplificó a solo --username/--password, sin
+  vincular a ningún empleado (se puede linkear después desde /usuarios).
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -323,11 +363,15 @@ QUÉ SEGUIRÍA HACIENDO
   rol en esos módulos (ej: ¿un Asesor debería poder borrar una marca o
   una sucursal?) y sumarlo a permissions.py como ya existe para usuarios
   (puede_gestionar_usuarios/puede_cambiar_password). Idea concreta: la
-  sección completa de Administración (Sucursales/Usuarios/Validaciones)
-  debería quedar directamente inaccesible para Asesor, no solo con botones
-  ocultos en el template sino bloqueada en el propio routes.py de cada
-  vista. /usuarios/perfil (ver QUÉ HICIMOS) ya quedó armado para seguir
-  siendo accesible aunque el resto de Administración se bloquee.
+  sección completa de Administración (Sucursales/Usuarios/Empleados/
+  Validaciones/Contabilidad) debería quedar directamente inaccesible para
+  Asesor, no solo con botones ocultos en el template sino bloqueada en el
+  propio routes.py de cada vista. /usuarios/perfil (ver QUÉ HICIMOS) ya
+  quedó armado para seguir siendo accesible aunque el resto de
+  Administración se bloquee. Empleados en particular: es una lista
+  pensada como exclusiva del área administrativa/contabilidad, no algo
+  que un Asesor debería poder ver o tocar — hoy cualquier rol logueado
+  puede.
 - Pantalla de "Links útiles" que de verdad muestre los botones cargados
   (label + url) para clickear, no solo el gestor de alta/edición/orden que
   ya existe en /links-utiles.

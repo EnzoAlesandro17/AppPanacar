@@ -1,56 +1,86 @@
 from src.db.connection import obtener_conexion
+from src.modules.administrar.employees.db import TABLA as TABLA_EMPLOYEES
 
 TABLA = "users"
 
+_COLUMNAS_FINALES = f"""
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT,
+    role TEXT NOT NULL DEFAULT 'Asesor',
+    employee_id INTEGER REFERENCES {TABLA_EMPLOYEES}(id),
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    status INTEGER NOT NULL DEFAULT 1
+"""
+
 
 def crear_tabla():
-    """Crea la tabla de usuarios si no existe todavía."""
+    """Crea la tabla de usuarios (acceso al sistema) si no existe todavía."""
     with obtener_conexion() as conexion:
-        conexion.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT UNIQUE,
-                name TEXT NOT NULL,
-                last_name TEXT NOT NULL,
-                dni TEXT NOT NULL UNIQUE,
-                username TEXT UNIQUE,
-                password TEXT,
-                email TEXT,
-                birth_date TEXT,
-                phone TEXT,
-                role TEXT NOT NULL DEFAULT 'Asesor',
-                branch_id INTEGER REFERENCES branches(id),
-                sort_order INTEGER NOT NULL DEFAULT 0,
-                status INTEGER NOT NULL DEFAULT 1
-            )
-            """
-        )
+        conexion.execute(f"CREATE TABLE IF NOT EXISTS {TABLA} ({_COLUMNAS_FINALES})")
 
         columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
-        columnas_nuevas = {
-            "branch_id": "INTEGER REFERENCES branches(id)",
-            "failed_attempts": "INTEGER NOT NULL DEFAULT 0",
-            "locked_until": "TEXT",
-        }
-        for columna, definicion in columnas_nuevas.items():
-            if columna not in columnas:
-                conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN {columna} {definicion}")
 
-        if "sort_order" not in columnas:
-            # Orden editable a mano (ver logic.py reordenar_*, drag&drop en el listado); arranca
-            # respetando el orden alfabético (apellido, nombre) que tenía la lista.
-            conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
-            conexion.execute(
-                f"""
-                UPDATE {TABLA} SET sort_order = (
-                    SELECT COUNT(*) FROM {TABLA} AS otra
-                    WHERE otra.last_name < {TABLA}.last_name
-                       OR (otra.last_name = {TABLA}.last_name AND otra.name < {TABLA}.name)
-                       OR (otra.last_name = {TABLA}.last_name AND otra.name = {TABLA}.name
-                           AND otra.id < {TABLA}.id)
-                ) + 1
-                """
-            )
+        # Migración única: antes `users` mezclaba los datos personales
+        # (name/last_name/dni/code/email/birth_date/phone/branch_id) con el
+        # login. Ahora esos datos viven en employees y cada usuario se
+        # linkea vía employee_id. Corre una sola vez, si detecta el esquema
+        # viejo (columna `name` todavía presente).
+        if "name" in columnas:
+            _migrar_tabla_vieja(conexion)
+        else:
+            if "employee_id" not in columnas:
+                conexion.execute(
+                    f"ALTER TABLE {TABLA} ADD COLUMN employee_id INTEGER REFERENCES {TABLA_EMPLOYEES}(id)"
+                )
+            if "sort_order" not in columnas:
+                conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
 
         conexion.commit()
+
+
+def _migrar_tabla_vieja(conexion):
+    """`dni` y `code` tenían UNIQUE, y SQLite no permite DROP COLUMN sobre una
+    columna con esa restricción — hay que reconstruir la tabla entera.
+
+    Por cada fila vieja se da de alta un empleado con sus datos personales
+    (Puesto queda "Sin especificar", a completar después). Las filas que
+    tenían username y contraseña cargados pasan a la tabla nueva, linkeadas
+    a su empleado nuevo vía employee_id; las que no, quedan solo como
+    empleados (no correspondía que siguieran siendo un "usuario" del
+    sistema)."""
+    filas = conexion.execute(f"SELECT * FROM {TABLA} ORDER BY id").fetchall()
+
+    filas_con_login = []
+    for fila in filas:
+        cursor = conexion.execute(
+            f"""
+            INSERT INTO {TABLA_EMPLOYEES}
+                (position, name, last_name, dni, email, birth_date, phone, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("Sin especificar", fila["name"], fila["last_name"], fila["dni"],
+             fila["email"], fila["birth_date"], fila["phone"], fila["status"]),
+        )
+        id_empleado = cursor.lastrowid
+        if fila["username"] and fila["password"]:
+            filas_con_login.append((fila, id_empleado))
+
+    conexion.execute(f"ALTER TABLE {TABLA} RENAME TO {TABLA}_viejo")
+    conexion.execute(f"CREATE TABLE {TABLA} ({_COLUMNAS_FINALES})")
+
+    for fila, id_empleado in filas_con_login:
+        conexion.execute(
+            f"""
+            INSERT INTO {TABLA}
+                (id, username, password, role, employee_id, failed_attempts, locked_until,
+                 sort_order, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (fila["id"], fila["username"], fila["password"], fila["role"], id_empleado,
+             fila["failed_attempts"], fila["locked_until"], fila["sort_order"], fila["status"]),
+        )
+
+    conexion.execute(f"DROP TABLE {TABLA}_viejo")

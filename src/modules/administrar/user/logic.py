@@ -4,18 +4,11 @@ import sqlite3
 from datetime import datetime, timedelta
 
 from src.constants.settings import Settings
-from src.constants.validations import (
-    validar_campos_obligatorios,
-    validar_dni,
-    validar_email,
-    validar_fecha,
-    validar_mayor_edad,
-    validar_password,
-    validar_telefono,
-)
+from src.constants.validations import validar_campos_obligatorios, validar_password
 from src.db.connection import obtener_conexion
 from src.exceptions import ValidationError
-from src.modules.administrar.branches.logic import obtener_por_id as obtener_sucursal_por_id
+from src.modules.administrar.employees.db import TABLA as TABLA_EMPLOYEES
+from src.modules.administrar.employees.logic import obtener_por_id as obtener_empleado_por_id
 from src.modules.administrar.user.db import TABLA
 
 _ITERACIONES_HASH = 100_000
@@ -36,71 +29,42 @@ def _verificar_hash(contrasena, contrasena_guardada):
     return hash_bytes.hex() == hash_hex
 
 
-def _validar_branch_id(branch_id):
-    if branch_id is None:
+def _validar_employee_id(employee_id):
+    if employee_id is None:
         return
-    sucursal = obtener_sucursal_por_id(branch_id)
-    if sucursal is None or sucursal["status"] == 0:
-        raise ValidationError("La sucursal indicada no existe.")
+    empleado = obtener_empleado_por_id(employee_id)
+    if empleado is None or empleado["status"] == 0:
+        raise ValidationError("El empleado indicado no existe.")
 
 
-def _validar_datos(name, last_name, dni, username, password, email, birth_date, phone, role, branch_id):
-    validar_campos_obligatorios({"name": name, "last_name": last_name, "dni": dni})
-    validar_dni(dni)
+def _validar_datos(username, password, role, employee_id):
+    validar_campos_obligatorios({"username": username, "password": password})
 
     if role not in ROLES:
         raise ValidationError(f"El rol debe ser uno de: {', '.join(ROLES)}.")
 
-    if bool(username) != bool(password):
-        raise ValidationError("Usuario y contraseña deben cargarse juntos, o dejarse los dos vacíos.")
-
-    _validar_branch_id(branch_id)
-
-    if email:
-        validar_email(email)
-
-    telefono_normalizado = validar_telefono(phone) if phone else None
-
-    if birth_date:
-        fecha = validar_fecha(birth_date)
-        validar_mayor_edad(fecha)
-
-    return telefono_normalizado
+    _validar_employee_id(employee_id)
 
 
 def _traducir_error_integridad(error):
-    mensaje = str(error)
-    if "code" in mensaje:
-        return ValidationError("Ya existe un usuario con ese code.")
-    if "dni" in mensaje:
-        return ValidationError("Ya existe un usuario con ese DNI.")
-    if "username" in mensaje:
-        return ValidationError("Ese nombre de usuario ya está en uso.")
-    return ValidationError("Ya existe un usuario con alguno de esos datos únicos.")
+    return ValidationError("Ese nombre de usuario ya está en uso.")
 
 
-def crear_usuario(name, last_name, dni, code=None, username=None, password=None,
-                   email=None, birth_date=None, phone=None, role="Asesor", branch_id=None):
+def crear_usuario(username, password, role="Asesor", employee_id=None):
     """Valida y crea un usuario nuevo. Devuelve el id generado."""
-    telefono_normalizado = _validar_datos(
-        name, last_name, dni, username, password, email, birth_date, phone, role, branch_id
-    )
-    if password:
-        validar_password(password)
+    _validar_datos(username, password, role, employee_id)
+    validar_password(password)
 
-    contrasena_hasheada = _hashear_contrasena(password) if password else None
+    contrasena_hasheada = _hashear_contrasena(password)
 
     with obtener_conexion() as conexion:
         try:
             cursor = conexion.execute(
                 f"""
-                INSERT INTO {TABLA}
-                    (code, name, last_name, dni, username, password, email, birth_date, phone, role,
-                     branch_id, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
+                INSERT INTO {TABLA} (username, password, role, employee_id, sort_order)
+                VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
                 """,
-                (code, name, last_name, dni, username, contrasena_hasheada, email, birth_date,
-                 telefono_normalizado, role, branch_id),
+                (username, contrasena_hasheada, role, employee_id),
             )
             conexion.commit()
             return cursor.lastrowid
@@ -121,48 +85,41 @@ def obtener_por_username(username):
 
 
 def listar_usuarios(incluir_borrados=False):
-    consulta = f"SELECT * FROM {TABLA}"
+    consulta = f"""
+        SELECT {TABLA}.*, {TABLA_EMPLOYEES}.name AS employee_name,
+               {TABLA_EMPLOYEES}.last_name AS employee_last_name
+        FROM {TABLA}
+        LEFT JOIN {TABLA_EMPLOYEES} ON {TABLA_EMPLOYEES}.id = {TABLA}.employee_id
+    """
     if not incluir_borrados:
-        consulta += " WHERE status = 1"
-    consulta += " ORDER BY sort_order"
+        consulta += f" WHERE {TABLA}.status = 1"
+    consulta += f" ORDER BY {TABLA}.sort_order"
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta).fetchall()
 
 
-def actualizar_usuario(id_usuario, name=None, last_name=None, dni=None, code=None,
-                        username=None, password=None, email=None, birth_date=None, phone=None,
-                        role=None, branch_id=None, quitar_branch_id=False):
+def actualizar_usuario(id_usuario, username=None, password=None, role=None, employee_id=None,
+                        quitar_employee_id=False):
     """Actualiza los campos recibidos; los que se pasan en None mantienen su valor actual.
 
-    branch_id=None mantiene la sucursal actual; para desasignarla explícitamente
-    pasar quitar_branch_id=True.
+    employee_id=None mantiene el vínculo actual; para desvincularlo
+    explícitamente pasar quitar_employee_id=True.
     """
     usuario_actual = obtener_por_id(id_usuario)
     if usuario_actual is None:
         raise ValidationError("El usuario no existe.")
 
     nuevos = {
-        "name": name if name is not None else usuario_actual["name"],
-        "last_name": last_name if last_name is not None else usuario_actual["last_name"],
-        "dni": dni if dni is not None else usuario_actual["dni"],
-        "code": code if code is not None else usuario_actual["code"],
         "username": username if username is not None else usuario_actual["username"],
-        "email": email if email is not None else usuario_actual["email"],
-        "birth_date": birth_date if birth_date is not None else usuario_actual["birth_date"],
-        "phone": phone if phone is not None else usuario_actual["phone"],
         "role": role if role is not None else usuario_actual["role"],
-        "branch_id": None if quitar_branch_id else (
-            branch_id if branch_id is not None else usuario_actual["branch_id"]
+        "employee_id": None if quitar_employee_id else (
+            employee_id if employee_id is not None else usuario_actual["employee_id"]
         ),
     }
     password_efectivo = password if password is not None else usuario_actual["password"]
 
-    telefono_normalizado = _validar_datos(
-        nuevos["name"], nuevos["last_name"], nuevos["dni"], nuevos["username"],
-        password_efectivo, nuevos["email"], nuevos["birth_date"], nuevos["phone"], nuevos["role"],
-        nuevos["branch_id"],
-    )
+    _validar_datos(nuevos["username"], password_efectivo, nuevos["role"], nuevos["employee_id"])
     if password:
         validar_password(password)
 
@@ -171,18 +128,8 @@ def actualizar_usuario(id_usuario, name=None, last_name=None, dni=None, code=Non
     with obtener_conexion() as conexion:
         try:
             conexion.execute(
-                f"""
-                UPDATE {TABLA}
-                SET code = ?, name = ?, last_name = ?, dni = ?, username = ?,
-                    password = ?, email = ?, birth_date = ?, phone = ?, role = ?, branch_id = ?
-                WHERE id = ?
-                """,
-                (
-                    nuevos["code"], nuevos["name"], nuevos["last_name"], nuevos["dni"],
-                    nuevos["username"], contrasena_hasheada, nuevos["email"],
-                    nuevos["birth_date"], telefono_normalizado, nuevos["role"], nuevos["branch_id"],
-                    id_usuario,
-                ),
+                f"UPDATE {TABLA} SET username = ?, password = ?, role = ?, employee_id = ? WHERE id = ?",
+                (nuevos["username"], contrasena_hasheada, nuevos["role"], nuevos["employee_id"], id_usuario),
             )
             conexion.commit()
         except sqlite3.IntegrityError as error:

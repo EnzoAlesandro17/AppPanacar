@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Empleados borrados</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Puesto</th>
+            <th>DNI</th>
+            <th>Teléfono</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for empleado in empleados %}
+        <tr>
+            <td>{{ empleado['name'] }} {{ empleado['last_name'] }}</td>
+            <td>{{ empleado['position'] }}</td>
+            <td>{{ empleado['dni'] }}</td>
+            <td>{{ empleado['phone'] or '—' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('employees.reactivar', id_empleado=empleado['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay empleados borrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar empleado' if accion == 'editar' else 'Nuevo empleado' }}</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Puesto <span class="obligatorio">*</span>
+        <input type="text" name="position" value="{{ empleado.position or '' if empleado else '' }}" required>
+    </label>
+    <label>Nombre <span class="obligatorio">*</span>
+        <input type="text" name="name" value="{{ empleado.name or '' if empleado else '' }}" required>
+    </label>
+    <label>Apellido <span class="obligatorio">*</span>
+        <input type="text" name="last_name" value="{{ empleado.last_name or '' if empleado else '' }}" required>
+    </label>
+    <label>DNI <span class="obligatorio">*</span>
+        <input type="text" name="dni" value="{{ empleado.dni or '' if empleado else '' }}" required>
+    </label>
+    <label>Fecha de nacimiento
+        <input type="text" name="birth_date" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}"
+               value="{{ (empleado.birth_date | fecha_visual) if empleado else '' }}">
+    </label>
+    <label>Email
+        <input type="email" name="email" value="{{ empleado.email or '' if empleado else '' }}">
+    </label>
+    <label>Teléfono
+        <input type="text" name="phone" value="{{ empleado.phone or '' if empleado else '' }}">
+    </label>
+    <label>Contacto de emergencia (nombre)
+        <input type="text" name="emergency_contact_name" value="{{ empleado.emergency_contact_name or '' if empleado else '' }}">
+    </label>
+    <label>Contacto de emergencia (teléfono)
+        <input type="text" name="emergency_contact_phone" value="{{ empleado.emergency_contact_phone or '' if empleado else '' }}">
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+{% endblock %}

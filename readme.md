@@ -15,11 +15,12 @@ AppPanacar/
 │   ├── test_login.py                 # iniciar_sesion: credenciales, mensaje genérico, bloqueo tras MAX_LOGIN_ATTEMPTS, usuario borrado, y el flujo HTTP /usuarios/login
 │   ├── test_branches.py              # CRUD + borrado lógico + reordenar_sucursales, como referencia del patrón repetido en los demás módulos
 │   ├── test_reorder_http.py          # Endpoint POST /reordenar por HTTP: aplica el orden, exige CSRF (header) y login
-│   ├── test_perfil.py                 # /usuarios/perfil: accesible sin permiso de gestión, sin campo role, ignora intentos de escalar rol/sucursal, exige la contraseña actual para cambiarla
+│   ├── test_perfil.py                 # /usuarios/perfil ("Mi cuenta"): solo username/password, ignora intentos de escalar rol o vincularse a un empleado, exige la contraseña actual para cambiarla
 │   ├── test_fecha_visual.py            # parsear_fecha_visual/formatear_fecha_visual (conversión dd/mm/aaaa <-> ISO)
 │   ├── test_configuracion.py           # Placeholder /configuracion/: accesible para cualquier rol, exige login
 │   ├── test_contabilidad.py            # Placeholder /contabilidad/: accesible para cualquier rol, exige login
-│   └── test_informacion_util.py        # CRUD + observaciones + reordenar_enlaces + tile ancho en home + URL oculta en el listado + CSRF del endpoint /reordenar
+│   ├── test_informacion_util.py        # CRUD + observaciones + reordenar_enlaces + tile ancho en home + URL oculta en el listado + CSRF del endpoint /reordenar
+│   └── test_employees.py               # CRUD de empleados + vínculo employee_id con users + login usa el nombre del empleado vinculado
 ├── data/
 │   └── database.db                  # Base de datos SQLite local con los datos (se crea/usa en runtime, ignorada por git)
 ├── .venv/                           # Entorno virtual de Python (ignorado por git)
@@ -50,10 +51,11 @@ AppPanacar/
     │   ├── base.html                  # Layout común: header con usuario logueado (avatar + dropdown "Mi cuenta"/"Configuración"/"Salir"), nav con breadcrumb, mensajes flash
     │   ├── _macros.html                 # Macro campo_password(): input + botón de ojo, reusado en login/formulario de usuarios
     │   ├── administrar/index.html      # Pantalla principal "Sistema de gestión": Administración, Siniestros, Clientes, Vehículos, Stock
-    │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Usuarios y Validaciones
+    │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Usuarios, Empleados, Validaciones y Contabilidad
     │   ├── siniestros/index.html         # Placeholder de "Siniestros" (módulo todavía sin diseñar, ver RODO.txt)
     │   ├── configuracion/index.html      # Placeholder de "Configuración" (todavía vacío, sin diseñar)
-    │   ├── user/{login,listar,formulario,borrados}.html
+    │   ├── user/{login,listar,formulario,borrados,perfil}.html
+    │   ├── employees/{listar,formulario,borrados}.html
     │   ├── branches/{listar,formulario,borrados}.html
     │   ├── clients/{listar,formulario,borrados}.html
     │   ├── products/{listar,formulario,borrados}.html    # Tile/breadcrumb dice "Stock"; los templates y rutas internas siguen llamándose products
@@ -81,10 +83,14 @@ AppPanacar/
             │   ├── db.py                 # Creación de la tabla products
             │   ├── logic.py              # CRUD, validación de precios mayorista/minorista y manejo de stock (incluye productos sin stock físico)
             │   └── routes.py             # Blueprint 'products': vistas HTTP (/stock), CRUD completo + compatibilidad con vehículos
-            ├── user/                    # Módulo de usuarios
-            │   ├── db.py                 # Creación de la tabla users (con role y branch_id como FK a branches)
+            ├── user/                    # Módulo de usuarios: SOLO acceso al sistema (username, password, role, employee_id opcional)
+            │   ├── db.py                 # Creación de la tabla users; migración one-shot que reconstruye la tabla (dni/code tenían UNIQUE, SQLite no permite DROP COLUMN sobre eso) migrando los datos personales viejos a employees
             │   ├── logic.py              # CRUD de usuarios, hash de contraseñas (pbkdf2_hmac + salt) y lógica de login (iniciar_sesion)
-            │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/usuarios), restringido a Admin/BackOffice salvo login/logout
+            │   └── routes.py             # Blueprint 'user': login, logout y CRUD completo (/usuarios) restringido a Admin/BackOffice, más /usuarios/perfil ("Mi cuenta": solo username/password, cualquier rol)
+            ├── employees/               # Módulo de empleados: ficha de personal, separada del acceso al sistema
+            │   ├── db.py                 # Creación de la tabla employees (position/name/last_name/dni obligatorios; birth_date/email/phone/contacto de emergencia opcionales)
+            │   ├── logic.py              # CRUD, validaciones (DNI, email, teléfono, mayoría de edad si hay fecha de nacimiento), borrado lógico
+            │   └── routes.py             # Blueprint 'employees': vistas HTTP (/empleados), CRUD completo, dentro de Administración
             ├── vehicles/                # Módulo de vehículos concretos (no marcas: patente, modelo, año, etc.)
             │   ├── db.py                 # Creación de la tabla vehicles (brand_id FK a vehicle_brands)
             │   ├── logic.py              # CRUD, validación de dominio (patente) y año, borrado lógico
@@ -113,7 +119,7 @@ Además de esos 4 módulos, `src/modules/administrar/validaciones/` agrupa catá
 
 `vehicles` (a la par de `clients`/`products`, no dentro de `validaciones/`) es la tabla de vehículos concretos: marca (FK a `vehicle_brands`), modelo y año obligatorios, dominio (patente) obligatorio y validado con formato argentino viejo (ABC123) o Mercosur (AB123CD), y color/número de chasis/número de motor opcionales. Todavía sin `client_id` (dueño) a propósito: esa relación se define recién con el futuro módulo de siniestros, igual que se decidió con `insurance_companies` — ver RODO.txt.
 
-Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios, Validaciones y Contabilidad), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`), **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb) y, como último tile, ancho y celeste claro, **Links útiles** (`/links-utiles`). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
+Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, en orden, **Administración** (`/administracion`, agrupa lo más administrativo/config: Sucursales, Usuarios, Empleados, Validaciones y Contabilidad), **Siniestros** (`/siniestros`, todavía un placeholder: el módulo real está sin diseñar, ver RODO.txt), **Clientes** (`/clientes`), **Vehículos** (`/vehiculos`), **Stock** (`/stock`; el módulo `products` por dentro, el nombre visible pasó de "Productos" a "Stock" en el tile, los títulos y el breadcrumb) y, como último tile, ancho y celeste claro, **Links útiles** (`/links-utiles`). Todas las URLs de la app están en español y coinciden con el título visible de cada página (`/sucursales`, `/usuarios`, `/marcas-vehiculos`, `/companias-seguro`, `/estados-siniestro`); por dentro los blueprints y las tablas siguen en inglés (branches, user, vehicle_brands, etc.) — solo el `url_prefix` de cada uno cambió, nunca el nombre del módulo ni de la tabla.
 
 **Links útiles** (`src/modules/administrar/informacion_util/` por dentro — el nombre visible cambió de "Información Útil" a "Links útiles" pero el módulo/blueprint/tabla no, mismo criterio que Stock/products) es un catálogo de enlaces con el mismo patrón CRUD + borrado lógico + orden editable (drag & drop) que vehicle_brands/insurance_companies/claim_statuses, con tres campos por entrada: `label` (el texto del botón), `url` (el link) y `observations` (notas libres, opcional). La URL no se muestra como texto en el listado — solo queda en el `href` del botón "Abrir" (se abre en pestaña nueva) — para no tener contraseñas o links sensibles a la vista en la pantalla; la columna de observaciones ocupa el lugar donde antes se mostraba la URL. Por ahora `/links-utiles` es solo el gestor de esas entradas (alta/edición/borrado/reordenar); todavía no existe una pantalla separada que muestre los botones ya armados para clickear, eso queda para más adelante.
 
@@ -142,5 +148,5 @@ Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test 
 - **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado), así nunca se pierden datos de auditoría por error.
 - **Consultas parametrizadas**: todas las queries a SQLite usan placeholders (`?`), nunca se arma SQL concatenando texto ingresado por el usuario — evita inyección SQL.
 - **Protección CSRF**: `Flask-WTF` (`CSRFProtect`) está activado globalmente en `create_app()` (`src/app.py`); todos los `<form method="post">` llevan su `csrf_token` oculto. Cualquier POST sin token válido responde 400 antes de llegar a la vista.
-- **Autogestión sin escalar rol**: `/usuarios/perfil` ("Mi cuenta" en el menú de usuario) deja a cualquier usuario logueado editar sus propios datos (nombre, teléfono, etc.) sin pasar por `puede_gestionar_usuarios` — comparte el template `user/formulario.html` con la edición de Admin/BackOffice, pero nunca lee ni acepta `role`/`branch_id` del formulario (`_datos_del_form_perfil` en `user/routes.py`, función separada a propósito de `_datos_del_form`, no un filtro del mismo dict). Aunque alguien edite el HTML y mande esos campos igual, el servidor los ignora por completo: probado en `tests/test_perfil.py`.
+- **Usuarios (acceso) separado de Empleados (personal)**: `users` es solo username/password/role/`employee_id` (opcional, FK a `employees`); los datos personales (nombre, DNI, puesto, contacto de emergencia, etc.) viven en el módulo `employees`, dentro de Administración. `/usuarios/perfil` ("Mi cuenta", autogestión) refleja esta separación: solo deja tocar username y contraseña, nunca `role` ni `employee_id` — ni siquiera están en ese formulario (a diferencia de `/usuarios/<id>/editar`, reservado a Admin/BackOffice, que sí puede vincular/desvincular un empleado). Probado en `tests/test_perfil.py`.
 - **Cambio de contraseña propia exige la contraseña actual**: solo en `/usuarios/perfil` (autogestión) — si se manda una contraseña nueva sin la actual, o la actual no coincide (`verificar_contrasena` en `user/logic.py`), se rechaza con `ValidationError` antes de tocar la base. La edición admin (`/usuarios/<id>/editar`) sigue sin pedirla, porque ahí el cambio lo hace un Admin/BackOffice, no el dueño de la cuenta.

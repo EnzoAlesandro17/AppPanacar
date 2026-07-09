@@ -12,6 +12,8 @@ from src.modules.administrar.clients.db import crear_tabla as crear_tabla_client
 from src.modules.administrar.clients.routes import clients_bp
 from src.modules.administrar.configuracion.routes import configuracion_bp
 from src.modules.administrar.contabilidad.routes import contabilidad_bp
+from src.modules.administrar.employees.db import crear_tabla as crear_tabla_employees
+from src.modules.administrar.employees.routes import employees_bp
 from src.modules.administrar.informacion_util.db import crear_tabla as crear_tabla_useful_links
 from src.modules.administrar.informacion_util.routes import informacion_util_bp
 from src.modules.administrar.products.db import crear_tabla as crear_tabla_products
@@ -36,7 +38,9 @@ from src.modules.administrar.vehicles.routes import vehicles_bp
 
 def _inicializar_tablas():
     # Orden importa: clients y products/compatibilidad tienen FK a estos catálogos;
-    # vehicles tiene FK a vehicle_brands; users tiene FK a branches.
+    # vehicles tiene FK a vehicle_brands; users tiene FK a employees (y employees
+    # tiene que existir antes, la migración de datos personales viejos de users
+    # inserta filas ahí al arrancar).
     crear_tabla_vehicle_brands()
     crear_tabla_insurance_companies()
     crear_tabla_claim_statuses()
@@ -45,6 +49,7 @@ def _inicializar_tablas():
     crear_tabla_products()
     crear_tabla_compatibilidad()
     crear_tabla_vehicles()
+    crear_tabla_employees()
     crear_tabla_users()
     crear_tabla_useful_links()
 
@@ -78,5 +83,6 @@ def create_app():
     app.register_blueprint(configuracion_bp)
     app.register_blueprint(contabilidad_bp)
     app.register_blueprint(informacion_util_bp)
+    app.register_blueprint(employees_bp)
 
     return app

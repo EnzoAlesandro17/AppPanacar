@@ -5,20 +5,18 @@
 <table>
     <thead>
         <tr>
-            <th>Nombre</th>
             <th>Usuario</th>
             <th>Rol</th>
-            <th>Sucursal</th>
+            <th>Empleado</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
         {% for usuario in usuarios %}
         <tr>
-            <td>{{ usuario['name'] }} {{ usuario['last_name'] }}</td>
-            <td>{{ usuario['username'] or '—' }}</td>
+            <td>{{ usuario['username'] }}</td>
             <td>{{ usuario['role'] }}</td>
-            <td>{{ usuario['branch_id'] or '—' }}</td>
+            <td>{{ (usuario['employee_name'] ~ ' ' ~ usuario['employee_last_name']) if usuario['employee_name'] else '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('user.reactivar', id_usuario=usuario['id']) }}" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -27,7 +25,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay usuarios borrados.</td></tr>
+        <tr><td colspan="4">No hay usuarios borrados.</td></tr>
         {% endfor %}
     </tbody>
 </table>
