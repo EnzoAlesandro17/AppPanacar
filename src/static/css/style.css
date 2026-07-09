@@ -516,6 +516,51 @@ body.login-page .form-card button[type="submit"] {
     flex-shrink: 0;
 }
 
+/* Preguntas frecuentes */
+
+.faq-intro {
+    max-width: 640px;
+    margin: -8px auto 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: .9rem;
+}
+
+.faq-categoria {
+    max-width: 720px;
+    margin: 0 auto 28px;
+}
+
+.faq-categoria h2 {
+    font-size: 1.05rem;
+    margin: 0 0 10px;
+    color: var(--color-text);
+}
+
+.faq-item {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 4px 16px;
+    margin-bottom: 8px;
+}
+
+.faq-item summary {
+    padding: 10px 0;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.faq-item summary:hover {
+    color: var(--color-primary);
+}
+
+.faq-item p {
+    margin: 0 0 12px;
+    color: var(--color-text-muted);
+    font-size: .92rem;
+}
+
 /* Pie de página */
 
 .pie {

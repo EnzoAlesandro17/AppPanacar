@@ -88,6 +88,13 @@ Para el día a día, ver git log.
   útiles/Configuración/Mi cuenta quedan afuera a propósito, no son
   Administración. El tile "Administración" de la pantalla principal
   también se oculta para Asesor (no solo se bloquea la ruta).
+- "Preguntas frecuentes" se llenó de contenido estático (preguntas
+  agrupadas por categoría con <details>/<summary>, sin JS ni CRUD, texto
+  fijo en el template). Se dejó reservada a Admin/BackOffice a propósito
+  (no a todos los roles, aunque Asesor sea quien más se beneficiaría de
+  una guía): coherente con que ya quedó adentro de Administración al
+  reordenar los tiles. Si el criterio cambia más adelante, sacarla del
+  before_request de antes.
 
 
 QUÉ SEGUIRÍA HACIENDO
@@ -98,8 +105,9 @@ QUÉ SEGUIRÍA HACIENDO
   debajo de Admin en algún caso puntual dentro de esa sección.
 - Pantalla de "Links útiles" que muestre los botones ya cargados para
   clickear (hoy /links-utiles es solo el gestor de alta/edición/orden).
-- Diseñar qué va adentro de "Contabilidad", "Preguntas frecuentes" y
-  "Configuración" (los tres son placeholders vacíos por ahora).
+- Diseñar qué va adentro de "Contabilidad" y "Configuración" (todavía
+  placeholders vacíos). "Preguntas frecuentes" ya tiene contenido, ver
+  decisiones.
 - Decidir cómo se arma el frontend HTML y cómo habla con este backend
   (¿API local por sucursal? tiene que resolver el escenario sin WiFi).
   Todavía sin diseñar a propósito.

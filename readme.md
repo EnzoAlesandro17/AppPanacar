@@ -54,7 +54,7 @@ AppPanacar/
     │   ├── administracion/index.html    # Índice de "Administración": Sucursales, Empleados, Usuarios, Validaciones, Contabilidad y Preguntas frecuentes
     │   ├── siniestros/index.html         # Placeholder de "Siniestros" (módulo todavía sin diseñar, ver RODO.txt)
     │   ├── configuracion/index.html      # Placeholder de "Configuración" (todavía vacío, sin diseñar)
-    │   ├── preguntas_frecuentes/index.html # Placeholder de "Preguntas frecuentes" (todavía vacío, sin diseñar)
+    │   ├── preguntas_frecuentes/index.html # Contenido estático de "Preguntas frecuentes" (<details>/<summary> agrupados por categoría, sin JS)
     │   ├── user/{login,listar,formulario,borrados,perfil}.html
     │   ├── employees/{listar,formulario,borrados}.html
     │   ├── branches/{listar,formulario,borrados}.html
@@ -92,8 +92,8 @@ AppPanacar/
             │   ├── db.py                 # Creación de la tabla employees (position/name/last_name/dni obligatorios; birth_date/email/phone/contacto de emergencia opcionales) y de employee_branches (relación N a N con sucursales)
             │   ├── logic.py              # CRUD, validaciones (DNI, email, teléfono, mayoría de edad si hay fecha de nacimiento), borrado lógico, sincronización de sucursales asociadas
             │   └── routes.py             # Blueprint 'employees': vistas HTTP (/empleados), CRUD completo, selector múltiple de sucursales, dentro de Administración
-            ├── preguntas_frecuentes/    # Placeholder de "Preguntas frecuentes", dentro de Administración
-            │   └── routes.py             # Blueprint 'preguntas_frecuentes': índice de la sección (/preguntas-frecuentes), todavía sin diseñar
+            ├── preguntas_frecuentes/    # "Preguntas frecuentes", dentro de Administración
+            │   └── routes.py             # Blueprint 'preguntas_frecuentes': índice de la sección (/preguntas-frecuentes), contenido estático
             ├── vehicles/                # Módulo de vehículos concretos (no marcas: patente, modelo, año, etc.)
             │   ├── db.py                 # Creación de la tabla vehicles (brand_id FK a vehicle_brands)
             │   ├── logic.py              # CRUD, validación de dominio (patente) y año, borrado lógico
@@ -126,7 +126,9 @@ Navegación: la pantalla principal (`/`, título "Sistema de gestión") tiene, e
 
 **Links útiles** (`src/modules/administrar/informacion_util/` por dentro — el nombre visible cambió de "Información Útil" a "Links útiles" pero el módulo/blueprint/tabla no, mismo criterio que Stock/products) es un catálogo de enlaces con el mismo patrón CRUD + borrado lógico + orden editable (drag & drop) que vehicle_brands/insurance_companies/claim_statuses, con tres campos por entrada: `label` (el texto del botón), `url` (el link) y `observations` (notas libres, opcional). La URL no se muestra como texto en el listado — solo queda en el `href` del botón "Abrir" (se abre en pestaña nueva) — para no tener contraseñas o links sensibles a la vista en la pantalla; la columna de observaciones ocupa el lugar donde antes se mostraba la URL. Por ahora `/links-utiles` es solo el gestor de esas entradas (alta/edición/borrado/reordenar); todavía no existe una pantalla separada que muestre los botones ya armados para clickear, eso queda para más adelante.
 
-**Contabilidad** (`/contabilidad`, dentro de Administración) es, como Siniestros y Configuración, un placeholder vacío sin diseñar todavía. Lo mismo pasa con **Preguntas frecuentes** (`/preguntas-frecuentes`, también dentro de Administración).
+**Contabilidad** (`/contabilidad`, dentro de Administración) es, como Siniestros y Configuración, un placeholder vacío sin diseñar todavía.
+
+**Preguntas frecuentes** (`/preguntas-frecuentes`, dentro de Administración, exclusiva de Admin/BackOffice) es contenido estático pensado para alguien que nunca usó el sistema: preguntas agrupadas por categoría (primeros pasos, Mi cuenta, Administración, Clientes/Vehículos/Stock, convenciones de la app, módulos todavía sin terminar) con `<details>/<summary>` nativos del navegador — sin JavaScript, cada pregunta se expande sola al clickearla. No es un CRUD ni tiene datos en la base: es texto fijo en el template, para editarlo hay que tocar `src/templates/preguntas_frecuentes/index.html` directamente.
 
 `employees` tiene una relación N a N con `branches` a través de `employee_branches` (un empleado puede estar en una sucursal, en varias, o en ninguna): en el formulario de alta/edición es un `<select multiple>` de sucursales, y el listado muestra los nombres separados por coma (`GROUP_CONCAT` en `listar_empleados`). `_sincronizar_sucursales` en `employees/logic.py` reemplaza el set completo en cada guardado; distingue `branch_ids=None` (no tocar las asociaciones existentes, usado en updates parciales) de `branch_ids=[]` (vaciarlas explícitamente).
 
