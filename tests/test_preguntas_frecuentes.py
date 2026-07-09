@@ -1,8 +1,15 @@
-def test_preguntas_frecuentes_accesible_para_cualquier_rol(asesor):
-    resp = asesor.get("/preguntas-frecuentes/")
+def test_preguntas_frecuentes_accesible_para_admin(admin):
+    resp = admin.get("/preguntas-frecuentes/")
 
     assert resp.status_code == 200
     assert b"Preguntas frecuentes" in resp.data
+
+
+def test_preguntas_frecuentes_bloqueada_para_asesor(asesor):
+    resp = asesor.get("/preguntas-frecuentes/", follow_redirects=False)
+
+    assert resp.status_code == 302
+    assert resp.headers["Location"] == "/"
 
 
 def test_preguntas_frecuentes_requiere_login(client):

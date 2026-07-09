@@ -22,402 +22,97 @@ nativo). Por eso se limpió todo lo que era Tkinter y quedó solo el backend
 y cómo se va a servir.
 
 
-QUÉ HICIMOS (limpieza post-copia)
------------------------------------
-- Se borró toda la capa de UI de Tkinter: main.py (la ventana raíz),
-  src/ui_nav.py, src/constants/styles.py, y todos los ui.py / *_dialog.py /
-  login_ui.py / listado_frame.py de cada módulo. Sin frontend por ahora,
-  a propósito.
-- Se limpiaron los __pycache__ sueltos que habían quedado versionados fuera
-  del .gitignore.
-- src/constants/settings.py perdió WINDOW_WIDTH/WINDOW_HEIGHT (geometría de
-  Tkinter); quedaron APP_NAME, VERSION, TIMEOUT_SECONDS, MAX_LOGIN_ATTEMPTS
-  que sí son lógica de negocio.
-- Settings.APP_NAME pasó de "APPEMAR - Sistema Interno" a "Panacar - Sistema
-  Interno". Queda pendiente revisar si aparece "AppEmar"/"APPEMAR" en algún
-  otro lado (textos, nombres de tabla, etc.).
-- validar_cuit (src/constants/validations.py) ahora valida también el dígito
-  verificador del CUIT (algoritmo módulo 11, el mismo que usa AFIP), no solo
-  la cantidad de dígitos. Antes cualquier CUIT de 11 dígitos pasaba aunque
-  fuera inválido.
-- validar_password (nueva, en validations.py): largo mínimo 8 y máximo 64,
-  siguiendo NIST SP 800-63B (el estándar actual de la comunidad para
-  políticas de contraseñas). A propósito sin reglas de complejidad forzada
-  (mayúscula/número/símbolo) — ese mismo estándar las desaconseja porque en
-  la práctica producen contraseñas predecibles sin mejorar la seguridad
-  real. Enganchada en user/logic.py: se valida la contraseña nueva en texto
-  plano en crear_usuario y actualizar_usuario, antes de hashear (con
-  cuidado de no correrla sobre el hash ya guardado cuando actualizar_usuario
-  no recibe una contraseña nueva).
-- validar_telefono ahora sigue el formato E.164 (estándar internacional
-  ITU-T): "+" opcional + entre 8 y 15 dígitos, en vez de exigir
-  exactamente 13 dígitos hardcodeado a Argentina. Acepta con o sin código
-  de país.
+DECISIONES QUE VALE LA PENA RECORDAR
+---------------------------------------
+Esto NO es un changelog: lo que se ve leyendo el código o los templates no
+está acá. Solo el "por qué" de las cosas que no son obvias mirando el repo.
+Para el día a día, ver git log.
 
-Lo que sigue en pie de la base heredada (backend, sin tocar por ahora):
-- Cada área (users, clients, products, branches) tiene su propio db.py /
-  logic.py, todos compartiendo la misma DB SQLite.
-- Conexión centralizada en src/db/connection.py (GestorDB.conectar() +
-  obtener_conexion() como context manager, con foreign_keys ON).
-- Esquema de las 4 tablas, todas con columna status (1 = activo, 0 = borrado
-  lógico) para no perder datos con un DELETE real.
-- CRUD completo + validaciones de negocio en los 4 módulos, con las
-  validaciones genéricas (email, teléfono, DNI, CUIT, fecha/edad mínima,
-  campos obligatorios) centralizadas en src/constants/validations.py.
-- Contraseñas de usuario hasheadas con pbkdf2_hmac + salt (nunca texto plano).
-- products: precio mayorista/minorista con validación cruzada, y stock que
-  puede ser NULL para productos sin inventario físico.
-- users con role (Admin / BackOffice / Asesor) y branch_id (FK a branches,
-  nullable). Los tres roles entran con usuario y contraseña por igual.
-- src/permissions.py centraliza qué rol puede hacer qué (gestión de
-  usuarios, jerarquía de cambio de contraseñas).
-- src/session.py guarda el usuario logueado en memoria del proceso.
-- login real vía iniciar_sesion() en user/logic.py (mensaje de error
-  genérico, bloqueo a los MAX_LOGIN_ATTEMPTS intentos fallidos).
-- Protección CSRF con Flask-WTF (CSRFProtect activado en create_app(),
-  src/app.py) y csrf_token oculto en los 15 forms POST de la app (login,
-  alta/edición de los 4 módulos, borrar/reactivar, y compatibilidad de
-  productos). Cualquier POST sin token válido devuelve 400 antes de tocar
-  la vista.
-- Nueva sección "Validaciones" (src/modules/administrar/validaciones/):
-  agrupa catálogos de referencia con el mismo patrón CRUD que los demás
-  módulos (db/logic/routes + templates propios).
-    - vehicle_brands (marcas de vehículos): reemplaza el texto libre
-      brand_vehicle de product_compatibility por un brand_vehicle_id (FK).
-      La migración de la tabla vieja corre sola al arrancar la app: si
-      encuentra la columna brand_vehicle de texto, da de alta cada marca
-      distinta en el catálogo nuevo, la reemplaza por brand_vehicle_id y
-      borra la columna vieja (crear_tabla_compatibilidad en products/db.py).
-      Fue la primera migración de esquema real (ALTER TABLE) del proyecto,
-      sin borrar la DB de dev.
-    - insurance_companies (compañías de seguro): catálogo cargado, todavía
-      sin engancharse a ningún otro módulo. Se probó primero vincularlo
-      directo a clients (insurance_company_id), pero la aseguradora no es
-      un dato del cliente sino del siniestro (un mismo cliente puede tener
-      siniestros con distintas aseguradoras) — se revirtió esa FK y quedó
-      solo el catálogo, a la espera del módulo de siniestros (ver VISIÓN A
-      FUTURO).
-    - claim_statuses (estados de siniestro): mismo patrón simple que
-      vehicle_brands (solo name + status), catálogo cargado y todavía sin
-      engancharse a ningún módulo real. Pensado para el desplegable de
-      estado cuando exista la pantalla de siniestros (ver VISIÓN A FUTURO).
-- Orden editable a mano: branches, user, vehicle_brands, insurance_companies
-  y claim_statuses suman una columna sort_order (migración ALTER TABLE +
-  backfill respetando el orden alfabético que tenían). Primer intento con
-  botones ↑/↓ (mover_arriba/mover_abajo por swap con la fila vecina):
-  funcionaba pero quedaba feo, así que se reemplazó por arrastrar y soltar
-  (drag & drop) directo sobre la fila. Es el primer uso de JavaScript en el
-  proyecto: src/static/js/reorder.js, vanilla y sin librerías/CDN (offline).
-  Usa Pointer Events en vez de la API nativa de drag-and-drop HTML5 porque
-  esa API no soporta touch y la app tiene que andar en celulares. Al soltar
-  manda por fetch el array completo de ids en su nuevo orden a un endpoint
-  POST .../reordenar de cada blueprint (csrf token vía header X-CSRFToken,
-  tomado de <meta name="csrf-token"> agregado a base.html); reordenar_* en
-  cada logic.py reescribe sort_order según la posición de cada id recibido.
-  Los registros nuevos se agregan al final (MAX(sort_order) + 1). clients,
-  products y vehicles quedaron afuera a propósito: son listas que crecen
-  mucho (no un catálogo chico) y no tiene sentido ordenarlas a mano, siguen
-  por nombre/dominio.
-- Arrancó la suite de tests con pytest (tests/, pytest.ini con
-  testpaths = tests). tests/conftest.py define un fixture `app` que
-  parchea src.db.connection.DB_PATH a un archivo SQLite temporal
-  (tmp_path de pytest) antes de crear la app, así cada test arranca con
-  una base propia y vacía sin tocar nunca data/database.db; un fixture
-  `admin` crea un usuario Admin y lo loguea para los tests que necesitan
-  sesión. Cobertura inicial: constants/validations.py (CUIT con dígito
-  verificador, DNI, email, teléfono E.164, password, dominio, año),
-  breadcrumbs.migas(), login (mensaje genérico, bloqueo tras
-  MAX_LOGIN_ATTEMPTS, usuario borrado), y branches como módulo de
-  referencia del patrón CRUD + borrado lógico + reordenar_* que se repite
-  en los demás catálogos, incluido el endpoint HTTP /reordenar (aplica
-  el orden, exige CSRF por header y login). Falta sumar tests para el
-  resto de los módulos (ver QUÉ SEGUIRÍA HACIENDO).
-- vehicles (src/modules/administrar/vehicles/): tabla de vehículos
-  concretos, primer paso hacia el módulo de siniestros. Marca (FK a
-  vehicle_brands), modelo, año y dominio son obligatorios; color, número
-  de chasis y número de motor son opcionales. El dominio se valida con
-  formato argentino viejo (ABC123) o Mercosur (AB123CD) y se normaliza a
-  mayúsculas (validar_dominio en constants/validations.py); el año se
-  valida entre 1900 y el año próximo (validar_anio_vehiculo). A propósito
-  sin client_id (dueño) todavía: mismo criterio que insurance_companies,
-  esa relación se define recién con el módulo de siniestros (ver VISIÓN A
-  FUTURO) en vez de acoplarla antes de tiempo.
-- Reorganización de la navegación: la pantalla principal (/administrar) pasó
-  a llamarse "Sistema de gestión". Orden final de tiles: Administración,
-  Siniestros, Clientes, Vehículos, Stock. "Administración" (nuevo blueprint
-  administracion, src/modules/administrar/administracion/) agrupa lo
-  administrativo: Sucursales, Usuarios y Validaciones, que dejaron de estar
-  sueltos en la pantalla principal. "Siniestros" (src/modules/administrar/
-  siniestros/) es por ahora solo una página placeholder ("módulo todavía sin
-  diseñar"): el módulo real (cliente + vehículo + aseguradora) sigue
-  pendiente de diseño, ver VISIÓN A FUTURO. "Productos" se renombró a
-  "Stock" en el tile, el título de la página, el breadcrumb y la URL
-  (/products -> /stock, ver ítem siguiente); el blueprint y las plantillas
-  products/ por dentro no cambiaron de nombre. "producto" se mantiene para
-  referirse a un ítem individual, ej. "Nuevo producto".
-- Las URLs de toda la app se renombraron para coincidir con el título
-  visible de cada página (antes mezclaban inglés en la URL con español en
-  el título: /administrar -> "Sistema de gestión", /products -> "Stock",
-  /user -> "Usuarios", etc.). Cambio seguro porque todo el código usa
-  url_for(endpoint) y nunca URLs a mano (se confirmó por grep antes de
-  tocar nada). Mapeo final: "Sistema de gestión" pasó de /administrar a la
-  raíz / directamente (se sacó el redirect de app.py, ya no hace falta:
-  administrar_bp ahora se registra sin url_prefix). "Administración" queda
-  en /administracion, "Siniestros" en /siniestros y "Validaciones" en
-  /validaciones (ya coincidían). "Clientes" -> /clientes, "Vehículos" ->
-  /vehiculos, "Stock" -> /stock, "Sucursales" -> /sucursales, "Usuarios" ->
-  /usuarios, "Marcas de vehículos" -> /marcas-vehiculos, "Compañías de
-  seguro" -> /companias-seguro, "Estados de siniestro" -> /estados-siniestro.
-  Por dentro los blueprints, tablas y nombres de módulo NO cambiaron (siguen
-  branches, user, vehicle_brands, etc.), solo el url_prefix de cada uno.
-- Breadcrumb de navegación (src/breadcrumbs.py, función migas): reemplaza el
-  link plano "Volver" que había en el nav de todas las páginas (base.html) y
-  los links sueltos "Volver"/"Volver a X" que había en cada formulario.html/
-  borrados.html. Ahora el nav muestra el camino completo hasta la página
-  actual (ej. "Sistema de gestión / Administración / Validaciones / Marcas
-  de vehículos"), con cada tramo como link a ese nivel salvo el último (la
-  página actual, sin link). Cada blueprint arma sus propias migas con un
-  helper _migas(*ultimos) local en su routes.py que antepone el camino fijo
-  hasta ese módulo.
-- Estética general: los <h1> de todas las páginas quedaron centrados, se
-  agregó un footer (nombre + versión de la app, y una línea de alcance/
-  ayuda) al final de cada página, y se sumó la <meta name="viewport"> que
-  faltaba en base.html — sin ella el celular renderizaba la página como si
-  fuera de escritorio y forzaba zoom; era la pieza puntual que hacía falta
-  para mobile (el resto del layout ya era responsive).
-- Settings.APP_NAME pasó de "Panacar - Sistema Interno" a "Taller San
-  Antonio (Panacar S.R.L.)": Taller San Antonio es el nombre comercial del
-  local, Panacar S.R.L. la razón social. Se ve en el header, el <title> y
-  el footer de todas las páginas.
-- Header rediseñado: a la izquierda solo el nombre de la app (antes tenía
-  pegado "— Hola, nombre (rol)" en el mismo texto). A la derecha, antes del
-  botón "Salir", un avatar circular con la inicial del nombre + "nombre
-  (rol)" (clase .usuario-actual en base.html/style.css). Por ahora es solo
-  visual; queda como el lugar pensado para el futuro menú de configuración
-  de la cuenta (cambiar contraseña, etc.) — todavía no tiene dropdown ni
-  nada clickeable más que "Salir".
-- Carga inicial de catálogos: vehicle_brands e insurance_companies suman
-  listas de marcas de vehículos y compañías de seguro conocidas en
-  Argentina (_MARCAS_INICIALES / _ASEGURADORAS_INICIALES en sus db.py).
-  Se insertan con INSERT ... ON CONFLICT(name) DO NOTHING en cada arranque
-  de la app, así es idempotente: no duplica lo que ya esté cargado (se
-  respetaron los nombres exactos que ya había, ej. "San Cristobal" sin
-  tilde y "Nación" sin "Seguros", para no crear una entrada casi duplicada
-  con otra ortografía) y funciona igual en una base nueva (deploy futuro)
-  que en la de desarrollo actual.
-- Fondo con detalle sutil (style.css, regla body): dos radial-gradient en
-  celeste muy tenues (opacidad .04-.05) ancladas abajo a los costados con
-  background-attachment: fixed, para que la pantalla no sea un gris plano
-  pero sin llamar la atención — a propósito casi imperceptible.
-- Menú de usuario: "Salir" dejó de ser un link suelto al lado del avatar y
-  pasó a vivir en un dropdown que se abre al clickear el botón con el
-  avatar + nombre (src/static/js/menu-usuario.js, el segundo JS del
-  proyecto además de reorder.js — mismo criterio: vanilla, sin
-  librerías). Se cierra clickeando afuera, con Escape, o clickeando el
-  mismo botón de nuevo. El dropdown ahora tiene dos opciones: "Configurar
-  cuenta" (ver ítem siguiente) y "Salir".
-- Autogestión de cuenta (/usuarios/perfil, user_bp): cualquier usuario
-  logueado, sea cual sea su rol, puede editar sus propios datos sin pasar
-  por _requiere_gestion_usuarios (a diferencia de /usuarios/<id>/editar,
-  que sigue siendo Admin/BackOffice-only). Comparte el mismo template
-  user/formulario.html con accion="perfil": el bloque de Rol/Sucursal se
-  oculta con {% if accion != 'perfil' %}. La parte importante es en el
-  backend, no en el template: _datos_del_form_perfil() es una función
-  separada de _datos_del_form() (no un filtro del mismo dict) que ni
-  siquiera lee role/branch_id del form, así que aunque alguien edite el
-  HTML a mano y mande esos campos en el POST, el servidor los ignora por
-  completo — no hay forma de subirse de rol editando la propia cuenta.
-  Probado en tests/test_perfil.py (incluye el caso de intento de escalar
-  rol/sucursal a mano). El breadcrumb de esta página es top-level
-  ("Sistema de gestión / Mi cuenta"), sin pasar por Administración, a
-  propósito: cuando se implementen permisos por módulo (ítem siguiente) y
-  Administración quede bloqueada para Asesor, /perfil tiene que seguir
-  siendo alcanzable igual.
-- Botón para mostrar/ocultar contraseña, con un ícono de ojo (abierto/
-  cerrado) que cambia in-place en vez de mostrar dos íconos o cambiar de
-  ancho con un texto "Mostrar"/"Ocultar" (primer intento, quedaba feo:
-  el botón cambiaba de tamaño según el texto). Un solo <svg> cuyo
-  contenido interno se reemplaza por innerHTML al clickear
-  (src/static/js/mostrar-password.js, tercer JS del proyecto). El campo +
-  botón se armó como macro de Jinja (src/templates/_macros.html,
-  campo_password) para no repetir el mismo bloque de HTML/SVG en cada
-  formulario con contraseña: se usa en login.html y en user/formulario.html
-  (tanto la contraseña nueva como, para accion="perfil", la contraseña
-  actual).
-- Fechas en formato argentino dd/mm/aaaa en los formularios (nacimiento en
-  usuarios, compra en stock). Antes eran <input type="date">, que respeta
-  el idioma/región del navegador (no el lang="es" de la página), así que
-  en la práctica podían mostrarse como mm/dd/yyyy según el navegador de
-  quien lo abriera. Se reemplazó por <input type="text" pattern="\d{2}/
-  \d{2}/\d{4}">, y la conversión hacia/desde el aaaa-mm-dd que se guarda
-  en la base corre en el backend: parsear_fecha_visual (dd/mm/aaaa -> ISO,
-  se usa al recibir el form) y formatear_fecha_visual (ISO -> dd/mm/aaaa,
-  registrada como filtro de Jinja "fecha_visual" para mostrar el valor
-  guardado) en constants/validations.py. validar_fecha y
-  validar_mayor_edad no se tocaron: siguen recibiendo ISO como siempre,
-  ahora ya convertido antes de llegar a logic.py. Hubo que mover
-  _datos_del_form()/_datos_del_form_perfil() (user) adentro del try en
-  nuevo()/editar()/perfil(), mismo patrón que products.py ya usaba para
-  _parsear_numero, porque ahora también pueden lanzar ValidationError por
-  una fecha con formato inválido.
-- Autogestión de cuenta ("Mi cuenta"): cambiar la propia contraseña ahora
-  exige la contraseña actual (nuevo campo password_actual, verificado con
-  verificar_contrasena en user/logic.py, que ya existía sin usar). Si no
-  la manda o no coincide, ValidationError antes de tocar la base — no
-  aplica ningún otro cambio del formulario tampoco. La edición admin
-  (/usuarios/<id>/editar) sigue sin pedirla: ahí el que cambia la
-  contraseña es Admin/BackOffice, no el dueño de la cuenta.
-- El dropdown de usuario (antes solo "Salir", después "Configurar cuenta"
-  + "Salir") ahora tiene tres opciones: "Mi cuenta" (renombrado desde
-  "Configurar cuenta", mismo /usuarios/perfil), "Configuración" (nuevo,
-  placeholder: /configuracion, blueprint configuracion_bp, mismo patrón
-  que siniestros — página vacía "Todavía no hay nada acá", sin diseñar
-  qué va a tener) y "Salir".
-- Los .form-card (formularios de alta/edición) quedan centrados
-  horizontalmente en la pantalla (margin: 0 auto en style.css). Antes
-  quedaban pegados a la izquierda dentro del <main> de 900px porque solo
-  tenían max-width sin margin auto.
-- Header más limpio: el avatar ahora tiene dos letras (inicial del nombre
-  + inicial del apellido, session['iniciales'], calculada en
-  user/routes.py con _iniciales() al loguearse y al guardar cambios en
-  "Mi cuenta") en vez de una sola. El nombre y el rol dejaron de mostrarse
-  siempre al lado del avatar en la barra superior: ahora solo aparecen
-  como tooltip nativo (atributo title del botón) al pasar el mouse, y
-  como texto no clickeable arriba del todo dentro del dropdown
-  (.usuario-dropdown-info), separado de los links por un borde. Nota: si
-  alguien ya tenía una sesión abierta de antes de este cambio, el avatar
-  le va a aparecer vacío hasta el próximo login (session['iniciales'] no
-  existía en sesiones viejas) — no rompe nada, se autoresuelve solo.
-- Links útiles (nombre visible; se llamó "Información Útil" al principio
-  del mismo día y se renombró — src/modules/administrar/informacion_util/,
-  tabla useful_links, blueprint informacion_util_bp, url /links-utiles:
-  el módulo/blueprint/tabla se quedaron con el nombre viejo por dentro,
-  mismo criterio que Stock/products). Catálogo de enlaces con el mismo
-  patrón que vehicle_brands (CRUD + borrado lógico + reordenar_enlaces con
-  drag & drop), con tres campos por fila: label (texto del botón), url y
-  observations (notas libres, opcional, columna agregada después con
-  migración ALTER TABLE porque la tabla ya existía). La URL no se muestra
-  como texto en el listado (columna reemplazada por "Observaciones") —
-  sigue en el href del botón "Abrir" (abre en pestaña nueva,
-  target="_blank" rel="noopener noreferrer"), para no dejar links o
-  contraseñas sensibles a la vista en la pantalla del listado. Sin
-  validación de formato de URL a propósito (solo obligatorio no vacío),
-  para no complicar de más algo que el usuario puede simplemente corregir
-  si lo carga mal.
-  En la pantalla principal es un tile distinto a los demás: ancho completo
-  (grid-column: 1 / -1, ocupa las dos columnas) y de la mitad de alto
-  (menos padding vertical), celeste clarito (#eaf4ff) en vez del blanco de
-  los otros tiles — clase .tile-ancho en style.css.
-- Contabilidad (/contabilidad, dentro de Administración): mismo patrón
-  placeholder que Siniestros y Configuración, todavía "Todavía no hay nada
-  acá".
+- validar_password sigue NIST SP 800-63B a propósito: largo mínimo/máximo,
+  sin exigir mayúscula/número/símbolo (ese mismo estándar desaconseja esas
+  reglas, producen contraseñas predecibles sin mejorar la seguridad real).
+- insurance_companies quedó como catálogo suelto, no FK directa de clients:
+  se probó primero vincularlo al cliente y se revirtió, porque la
+  aseguradora es un dato del siniestro (un cliente puede tener siniestros
+  con distintas aseguradoras), no del cliente. Se engancha recién con el
+  futuro módulo de siniestros.
+- vehicles sin client_id a propósito, mismo criterio que insurance_companies:
+  esa relación (dueño) se define cuando se diseñe el módulo de siniestros,
+  no antes de tiempo.
+- Orden editable (branches, user, catálogos de validaciones, links útiles):
+  drag & drop con Pointer Events, no la API nativa de HTML5 (no anda en
+  touch y la app tiene que funcionar en celular). clients/products/vehicles
+  quedan afuera a propósito: son listas que crecen mucho para ordenar a mano.
+- Convención de URLs: todas en español, coinciden con el título visible de
+  cada página; blueprints/tablas/módulos por dentro se quedan en inglés (ej.
+  "Stock" -> /stock pero el módulo sigue siendo products). Mantener este
+  criterio en módulos nuevos.
+- Catálogos (marcas de vehículos, compañías de seguro) se cargan con
+  INSERT ... ON CONFLICT DO NOTHING al arrancar la app: idempotente, no
+  duplica en cada restart. Reusar el mismo patrón para futuros seeds.
+- Autogestión de cuenta (/usuarios/perfil): el backend nunca lee role ni
+  branch_id del form de autogestión (función separada, ni siquiera los
+  parsea) — no hay forma de subirse de rol editando la propia cuenta aunque
+  se manipule el HTML a mano. /usuarios/<id>/editar es el único lugar que
+  puede tocar esos campos, y sigue siendo Admin/BackOffice-only. El
+  breadcrumb de /perfil es top-level a propósito, para seguir siendo
+  alcanzable el día que Administración se bloquee para Asesor.
+- Cambiar la propia contraseña desde "Mi cuenta" exige la contraseña
+  actual; la edición admin no la exige (ahí el que cambia es Admin/
+  BackOffice, no el dueño de la cuenta).
+- Fechas en formularios en dd/mm/aaaa, no <input type="date">: ese input
+  respeta el idioma/región del navegador, no el lang de la página, y
+  terminaba mostrando mm/dd/yyyy en la práctica. La conversión hacia/desde
+  ISO (lo que se guarda) corre en el backend.
+- Links útiles: la URL no se muestra como texto en el listado (solo queda
+  en el href del botón "Abrir"), para no dejar links ni contraseñas
+  sensibles a la vista de cualquiera que mire la pantalla.
 - Separación Usuarios (acceso) / Empleados (personal): antes `users`
-  mezclaba las dos cosas (nombre/DNI/email/teléfono/fecha de nacimiento/
-  sucursal junto con username/password/rol). Se separó en dos módulos:
-    - employees (src/modules/administrar/employees/, tabla employees,
-      /empleados dentro de Administración): Puesto, Nombre, Apellido y DNI
-      obligatorios; fecha de nacimiento, email, teléfono y contacto de
-      emergencia (nombre + teléfono) opcionales. CRUD simple con borrado
-      lógico, sin orden editable (como clients, no como los catálogos
-      chicos). Es una lista exclusiva del área administrativa/contabilidad,
-      no algo que un Asesor necesite ver (todavía no hay permisos por
-      módulo para reforzar esto, ver ítem de controles de permiso).
-    - users quedó reducido a username, password, role y employee_id
-      (FK opcional a employees — "o no", el vínculo es opcional a
-      propósito). username y password ahora son siempre obligatorios (antes
-      podían dejarse los dos vacíos); ya no tiene sentido un "usuario" sin
-      login, esa persona es directamente un empleado sin cuenta.
-  Migración one-shot en user/db.py: como dni y code tenían UNIQUE, SQLite
-  no permite ALTER TABLE ... DROP COLUMN sobre esas columnas (a diferencia
-  de branch_id o brand_vehicle en migraciones anteriores, que sí se
-  pudieron dropear directo) — hubo que reconstruir la tabla entera
-  (RENAME a users_viejo, CREATE TABLE nueva, migrar cada fila vieja a un
-  employee nuevo con position="Sin especificar" a completar después, copiar
-  a la tabla nueva solo las filas que ya tenían username+password
-  cargados —las que no, quedan solo como empleados—, preservando los ids
-  originales, DROP de la tabla vieja). Corrida y verificada contra la base
-  real de dev: los 3 usuarios reales (admin, asesor_test, Enzo) migraron
-  bien, con sus datos personales intactos en employees y el login
-  funcionando. Ojo: esta migración corrió una vez contra la base real
-  ANTES de que se hiciera un backup (se verificó por probar que la app
-  levantaba, sin pensar que eso ya disparaba la migración) — salió bien
-  esta vez, pero la próxima vez que se toque algo así de sensible, backup
-  primero, verificar después.
-  session['name']/session['iniciales'] ahora se calculan en login() y en
-  /usuarios/perfil buscando el empleado vinculado (si hay employee_id);
-  si no hay empleado vinculado, usa el username como respaldo (_iniciales
-  con fallback a las primeras 2 letras del username). El formulario admin
-  de usuarios (/usuarios/nuevo, /usuarios/<id>/editar) ahora tiene un
-  <select> para elegir a qué empleado vincular la cuenta (opcional).
-  cli.py (create-admin) se simplificó a solo --username/--password, sin
-  vincular a ningún empleado (se puede linkear después desde /usuarios).
-- Reorden de tiles de Administración y relación empleados-sucursales:
-  el orden pasó a ser Sucursales/Empleados (primera fila),
-  Usuarios/Validaciones (segunda), Contabilidad/Preguntas frecuentes
-  (tercera) — el grid es de 2 columnas, así que el orden en el HTML es
-  el orden de lectura. Preguntas frecuentes (/preguntas-frecuentes,
-  dentro de Administración) es un placeholder nuevo, mismo patrón que
-  Siniestros/Configuración/Contabilidad ("Todavía no hay nada acá").
-  employees pasó a tener relación N a N con branches, vía tabla nueva
-  employee_branches (employee_id + branch_id, UNIQUE compuesto): un
-  empleado puede estar en una sucursal, en varias o en ninguna — no se
-  usó una FK simple porque el requerimiento explícito era "una o
-  varias". _sincronizar_sucursales() en employees/logic.py borra e
-  inserta de nuevo el set completo en cada guardado (más simple que un
-  diff); distingue branch_ids=None (no tocar nada, para updates
-  parciales) de branch_ids=[] (vaciar explícitamente) usando el None/
-  lista-vacía de Python a propósito. El formulario usa un
-  <select multiple> (sin drag & drop, no hacía falta orden acá); el
-  listado muestra las sucursales asociadas con GROUP_CONCAT en vez de
-  N+1 queries.
+  mezclaba las dos cosas. Quedó reducido a username/password/role/
+  employee_id opcional; los datos personales viven en employees, pensada
+  como lista exclusiva del área administrativa/contabilidad (todavía sin
+  permisos reales que lo bloqueen, ver pendientes). Lección de la
+  migración one-shot que hizo ese pase de datos: se corrió sin querer
+  contra la base real de dev antes de sacar backup (se verificó "¿levanta
+  la app?" sin pensar que eso ya disparaba la migración) — salió bien,
+  pero la próxima vez que se toque algo así de sensible: backup primero,
+  verificar después.
+- employees <-> branches es N a N (employee_branches) a propósito: un
+  empleado puede estar en una sucursal, en varias, o en ninguna.
+- Administración entera (Sucursales/Empleados/Usuarios/Validaciones + sus
+  3 catálogos/Contabilidad/Preguntas frecuentes) pasó a ser exclusiva de
+  Admin/BackOffice. Se implementó con un before_request por blueprint
+  (restringir_a_administracion en src/auth.py) en vez de repetir el chequeo
+  en cada vista: cubre rutas nuevas que se agreguen después sin acordarse
+  de proteger cada una a mano. Clientes/Vehículos/Stock/Siniestros/Links
+  útiles/Configuración/Mi cuenta quedan afuera a propósito, no son
+  Administración. El tile "Administración" de la pantalla principal
+  también se oculta para Asesor (no solo se bloquea la ruta).
 
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
-- Controles de permiso por módulo y no solo en gestión de usuarios: hoy
-  cualquier rol logueado (incluido Asesor) puede crear/editar/borrar
-  sucursales, clientes, productos, vehículos, marcas de vehículos y
-  compañías de seguro porque esos routes.py solo exigen login_required,
-  sin pasar por src/permissions.py. Falta decidir qué puede hacer cada
-  rol en esos módulos (ej: ¿un Asesor debería poder borrar una marca o
-  una sucursal?) y sumarlo a permissions.py como ya existe para usuarios
-  (puede_gestionar_usuarios/puede_cambiar_password). Idea concreta: la
-  sección completa de Administración (Sucursales/Empleados/Usuarios/
-  Validaciones/Contabilidad/Preguntas frecuentes) debería quedar directamente inaccesible para
-  Asesor, no solo con botones ocultos en el template sino bloqueada en el
-  propio routes.py de cada vista. /usuarios/perfil (ver QUÉ HICIMOS) ya
-  quedó armado para seguir siendo accesible aunque el resto de
-  Administración se bloquee. Empleados en particular: es una lista
-  pensada como exclusiva del área administrativa/contabilidad, no algo
-  que un Asesor debería poder ver o tocar — hoy cualquier rol logueado
-  puede.
-- Pantalla de "Links útiles" que de verdad muestre los botones cargados
-  (label + url) para clickear, no solo el gestor de alta/edición/orden que
-  ya existe en /links-utiles.
-- Diseñar qué va adentro de "Contabilidad" (/contabilidad, placeholder
-  vacío por ahora) y de "Preguntas frecuentes" (/preguntas-frecuentes,
-  ídem).
-- Decidir cómo se va a armar el frontend HTML y cómo habla con este backend
-  (¿API local tipo Flask/FastAPI por sucursal? ¿algo que también resuelva el
-  escenario sin WiFi?). Todavía sin diseñar a propósito.
-- Repasar y renombrar restos de "AppEmar" que vayan apareciendo (ya se hizo
-  Settings.APP_NAME) al contexto de Panacar.
-- Pensar el modo offline/multi-sucursal en serio: hoy la DB es un único
+- Permisos más finos dentro de cada módulo (no solo el todo-o-nada de
+  Administración): ej. si algún día Asesor necesita ver algo de
+  Administración en modo solo lectura, o si BackOffice necesita quedar por
+  debajo de Admin en algún caso puntual dentro de esa sección.
+- Pantalla de "Links útiles" que muestre los botones ya cargados para
+  clickear (hoy /links-utiles es solo el gestor de alta/edición/orden).
+- Diseñar qué va adentro de "Contabilidad", "Preguntas frecuentes" y
+  "Configuración" (los tres son placeholders vacíos por ahora).
+- Decidir cómo se arma el frontend HTML y cómo habla con este backend
+  (¿API local por sucursal? tiene que resolver el escenario sin WiFi).
+  Todavía sin diseñar a propósito.
+- Repasar restos de "AppEmar" que vayan apareciendo.
+- Pensar el modo offline/multi-sucursal en serio: hoy es una sola DB
   SQLite local; con 2 sucursales y máquinas no siempre conectadas hay que
-  decidir si cada sucursal tiene su propia DB y cómo se sincronizan, o si se
-  apunta a un servidor central que a veces no es alcanzable.
-- Seguir sumando tests de pytest a los módulos que todavía no tienen (arrancamos
-  con validations, breadcrumbs, login/bloqueo y branches+reorder como
-  referencia; faltan clients, products, vehicles, user CRUD completo,
-  vehicle_brands/insurance_companies/claim_statuses, permissions.py).
-- Seguir usando migraciones de esquema reales (ALTER TABLE) para columnas
-  nuevas en vez de borrar la DB de dev — ya se hizo una vez (brand_vehicle
-  -> brand_vehicle_id), falta que sea la norma y no la excepción.
-- Un módulo de ventas/movimientos que relacione clients + products + users +
-  branches.
-- Diseñar qué va adentro de "Configuración" (/configuracion, placeholder
-  vacío por ahora). Preferencias de usuario, configuración del sistema,
-  todavía sin definir qué.
+  decidir DB por sucursal + sincronización, o servidor central.
+- Seguir sumando tests a los módulos sin cobertura (ver tests/ para lo que
+  ya existe).
+- Migraciones de esquema reales (ALTER TABLE) como norma y no como
+  excepción para columnas nuevas.
+- Un módulo de ventas/movimientos que relacione clients + products + users
+  + branches.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
@@ -521,31 +216,25 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
   actualización, conciliaciones o aprobaciones con descuento.
 - Posible 2FA (TOTP con pyotp) para el login de Admin/BackOffice más
   adelante.
-- Módulo de siniestros: ya tiene tile en la pantalla principal y una página
-  placeholder (src/modules/administrar/siniestros/, blueprint 'siniestros',
-  /siniestros) que solo avisa que está sin diseñar. Es la entidad real que
-  une cliente + vehículo + aseguradora (no un dato suelto de cada uno por
-  separado). Un mismo cliente puede tener varios siniestros, cada uno con su
-  propia aseguradora y su propio vehículo. Necesita:
+- Módulo de siniestros: ya tiene tile y una página placeholder
+  (/siniestros). Es la entidad real que une cliente + vehículo +
+  aseguradora (no un dato suelto de cada uno por separado). Un mismo
+  cliente puede tener varios siniestros, cada uno con su propia aseguradora
+  y su propio vehículo. Necesita:
     - Un id legible para humanos (no solo el autoincrement de la tabla),
-      pensado como un resumen de patente + DNI, para que se pueda
-      identificar un siniestro de un vistazo sin abrir el registro.
+      pensado como un resumen de patente + DNI, para identificar un
+      siniestro de un vistazo sin abrir el registro.
     - Selector de cliente existente o alta de uno nuevo sin salir del
       formulario del siniestro.
-    - Selector de vehículo existente o alta de uno nuevo (ver ítem
-      siguiente) sin salir del formulario.
-    - Selector de compañía de seguro (ya existe el catálogo
-      insurance_companies, falta el módulo que lo consuma).
-    - Selector de estado (ya existe el catálogo claim_statuses, falta el
-      módulo que lo consuma).
+    - Selector de vehículo existente o alta de uno nuevo sin salir del
+      formulario.
+    - Selector de compañía de seguro y de estado (ya existen los catálogos
+      insurance_companies/claim_statuses, falta el módulo que los consuma).
     - El resto de los datos del siniestro (fecha, descripción, etc.)
       todavía sin definir.
-- Tabla de vehículos: ya existe (src/modules/administrar/vehicles/), con
-  marca -FK a vehicle_brands-, modelo, año, dominio, color, número de
-  chasis y número de motor. Todavía sin dueño/cliente a propósito (ver
-  arriba); falta decidir esa relación cuando se diseñe el módulo de
-  siniestros, para que este último pueda referenciar "el Hilux de tal
-  cliente" sin repetir esos datos sueltos cada vez.
+- vehicles todavía sin dueño/cliente a propósito (ver decisiones); falta
+  decidir esa relación cuando se diseñe el módulo de siniestros, para que
+  este pueda referenciar "el Hilux de tal cliente" sin repetir datos.
 
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)

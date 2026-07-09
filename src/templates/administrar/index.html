@@ -3,7 +3,9 @@
 {% block content %}
 <h1>Sistema de gestión</h1>
 <div class="tiles">
+    {% if puede_administracion %}
     <a class="tile" href="{{ url_for('administracion.index') }}">Administración</a>
+    {% endif %}
     <a class="tile" href="{{ url_for('siniestros.index') }}">Siniestros</a>
     <a class="tile" href="{{ url_for('clients.listar') }}">Clientes</a>
     <a class="tile" href="{{ url_for('vehicles.listar') }}">Vehículos</a>

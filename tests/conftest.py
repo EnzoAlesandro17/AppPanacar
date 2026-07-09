@@ -68,3 +68,20 @@ def asesor(client):
         follow_redirects=True,
     )
     return client
+
+
+@pytest.fixture
+def backoffice(client):
+    """Crea un BackOffice y lo loguea. Devuelve el client logueado."""
+    from src.modules.administrar.user.logic import crear_usuario
+
+    crear_usuario(username="backoffice_test", password="clave-segura-123", role="BackOffice")
+
+    resp = client.get("/usuarios/login")
+    token = extraer_csrf(resp.data)
+    client.post(
+        "/usuarios/login",
+        data={"csrf_token": token, "username": "backoffice_test", "password": "clave-segura-123"},
+        follow_redirects=True,
+    )
+    return client

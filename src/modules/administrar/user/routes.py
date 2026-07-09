@@ -98,6 +98,10 @@ def logout():
 @user_bp.route("/")
 @login_required
 def listar():
+    redireccion = _requiere_gestion_usuarios()
+    if redireccion:
+        return redireccion
+
     usuarios = listar_usuarios()
     return render_template("user/listar.html", usuarios=usuarios, migas=_migas())
 

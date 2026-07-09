@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from src.auth import login_required
+from src.auth import login_required, restringir_a_administracion
 from src.breadcrumbs import migas
 from src.constants.validations import parsear_fecha_visual
 from src.exceptions import ValidationError
@@ -16,6 +16,7 @@ from src.modules.administrar.employees.logic import (
 )
 
 employees_bp = Blueprint("employees", __name__, url_prefix="/empleados")
+employees_bp.before_request(restringir_a_administracion)
 
 
 def _migas(*ultimos):

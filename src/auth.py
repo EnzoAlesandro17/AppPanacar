@@ -7,7 +7,9 @@ puede ser de una sucursal o persona distinta.
 
 from functools import wraps
 
-from flask import redirect, session, url_for
+from flask import flash, redirect, session, url_for
+
+from src.permissions import puede_acceder_administracion
 
 
 def login_required(vista):
@@ -18,3 +20,17 @@ def login_required(vista):
         return vista(*args, **kwargs)
 
     return wrapper
+
+
+def restringir_a_administracion():
+    """Para usar como before_request de blueprints reservados a Admin/
+    BackOffice (Sucursales, Empleados, Usuarios, Validaciones, Contabilidad,
+    Preguntas frecuentes). Deja pasar el request si no hay sesión (para que
+    login_required en la vista se encargue del redirect a login); si hay
+    sesión pero el rol no alcanza, corta acá con un redirect a home."""
+    if "user_id" not in session:
+        return None
+    if not puede_acceder_administracion(session.get("role")):
+        flash("No tenés permiso para acceder a Administración.", "error")
+        return redirect(url_for("administrar.index"))
+    return None

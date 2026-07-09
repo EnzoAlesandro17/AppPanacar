@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from src.auth import login_required
+from src.auth import login_required, restringir_a_administracion
 from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.validaciones.vehicle_brands.logic import (
@@ -14,6 +14,7 @@ from src.modules.administrar.validaciones.vehicle_brands.logic import (
 )
 
 vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/marcas-vehiculos")
+vehicle_brands_bp.before_request(restringir_a_administracion)
 
 
 def _migas(*ultimos):

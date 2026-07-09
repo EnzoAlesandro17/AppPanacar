@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from src.auth import login_required
+from src.auth import login_required, restringir_a_administracion
 from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.validaciones.claim_statuses.logic import (
@@ -14,6 +14,7 @@ from src.modules.administrar.validaciones.claim_statuses.logic import (
 )
 
 claim_statuses_bp = Blueprint("claim_statuses", __name__, url_prefix="/estados-siniestro")
+claim_statuses_bp.before_request(restringir_a_administracion)
 
 
 def _migas(*ultimos):
