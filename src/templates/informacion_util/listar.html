@@ -4,7 +4,9 @@
 <h1>Links útiles</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('informacion_util.nuevo') }}">+ Nuevo enlace</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('informacion_util.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <table>
     <thead>

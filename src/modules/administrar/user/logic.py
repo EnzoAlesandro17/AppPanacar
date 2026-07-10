@@ -7,14 +7,15 @@ from datetime import datetime, timedelta
 from src.constants.settings import Settings
 from src.constants.validations import validar_campos_obligatorios, validar_password
 from src.db.connection import obtener_conexion
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.employees.db import TABLA as TABLA_EMPLOYEES
 from src.modules.administrar.employees.logic import obtener_por_id as obtener_empleado_por_id
-from src.modules.administrar.user.db import TABLA
+from src.modules.administrar.user.db import TABLA, TABLA_SUCURSALES
 
 _ITERACIONES_HASH = 100_000
 
-ROLES = ("Admin", "BackOffice", "Asesor")
+ROLES = ("IT", "BackOffice", "Asesor")
 
 
 def _hashear_contrasena(contrasena):
@@ -51,14 +52,59 @@ def _traducir_error_integridad(error):
     return ValidationError("Ese nombre de usuario ya está en uso.")
 
 
-def crear_usuario(username, password, role="Asesor", employee_id=None):
-    """Valida y crea un usuario nuevo. Devuelve el id generado."""
+def _sincronizar_sucursales_usuario(conexion, id_usuario, branch_ids):
+    """Reemplaza el set de sucursales asociadas a un usuario por branch_ids.
+    branch_ids=None no toca nada (se usa en updates parciales); una lista
+    vacía borra todas las asociaciones."""
+    if branch_ids is None:
+        return
+
+    for branch_id in branch_ids:
+        sucursal = conexion.execute(
+            f"SELECT id FROM {TABLA_BRANCHES} WHERE id = ? AND status = 1", (branch_id,)
+        ).fetchone()
+        if sucursal is None:
+            raise ValidationError("Una de las sucursales indicadas no existe.")
+
+    conexion.execute(f"DELETE FROM {TABLA_SUCURSALES} WHERE user_id = ?", (id_usuario,))
+    for branch_id in branch_ids:
+        conexion.execute(
+            f"INSERT INTO {TABLA_SUCURSALES} (user_id, branch_id) VALUES (?, ?)",
+            (id_usuario, branch_id),
+        )
+
+
+def obtener_sucursales_ids_usuario(id_usuario):
+    """Ids de las sucursales asociadas a un usuario."""
+    with obtener_conexion() as conexion:
+        filas = conexion.execute(
+            f"SELECT branch_id FROM {TABLA_SUCURSALES} WHERE user_id = ?", (id_usuario,)
+        ).fetchall()
+        return [fila["branch_id"] for fila in filas]
+
+
+def _buscar_borrado_por_username(conexion, username):
+    return conexion.execute(
+        f"SELECT id FROM {TABLA} WHERE username = ? AND status = 0", (username,)
+    ).fetchone()
+
+
+def crear_usuario(username, password, role="Asesor", employee_id=None, branch_ids=None):
+    """Valida y crea un usuario nuevo. Devuelve el id generado.
+
+    Si ya existe un usuario borrado con ese mismo username, no crea uno
+    nuevo: levanta RegistroBorradoExistente para que la vista ofrezca
+    reactivar el que ya estaba en vez de chocar con el UNIQUE."""
     _validar_datos(username, password, role, employee_id)
     validar_password(password)
 
     contrasena_hasheada = _hashear_contrasena(password)
 
     with obtener_conexion() as conexion:
+        borrado = _buscar_borrado_por_username(conexion, username)
+        if borrado is not None:
+            raise RegistroBorradoExistente(borrado["id"])
+
         try:
             cursor = conexion.execute(
                 f"""
@@ -67,8 +113,10 @@ def crear_usuario(username, password, role="Asesor", employee_id=None):
                 """,
                 (username, contrasena_hasheada, role, employee_id),
             )
+            id_usuario = cursor.lastrowid
+            _sincronizar_sucursales_usuario(conexion, id_usuario, branch_ids if branch_ids is not None else [])
             conexion.commit()
-            return cursor.lastrowid
+            return id_usuario
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
 
@@ -101,11 +149,12 @@ def listar_usuarios(incluir_borrados=False):
 
 
 def actualizar_usuario(id_usuario, username=None, password=None, role=None, employee_id=None,
-                        quitar_employee_id=False):
+                        quitar_employee_id=False, branch_ids=None):
     """Actualiza los campos recibidos; los que se pasan en None mantienen su valor actual.
 
     employee_id=None mantiene el vínculo actual; para desvincularlo
-    explícitamente pasar quitar_employee_id=True.
+    explícitamente pasar quitar_employee_id=True. branch_ids=None mantiene
+    las sucursales actuales; para vaciarlas pasar branch_ids=[].
     """
     usuario_actual = obtener_por_id(id_usuario)
     if usuario_actual is None:
@@ -132,6 +181,7 @@ def actualizar_usuario(id_usuario, username=None, password=None, role=None, empl
                 f"UPDATE {TABLA} SET username = ?, password = ?, role = ?, employee_id = ? WHERE id = ?",
                 (nuevos["username"], contrasena_hasheada, nuevos["role"], nuevos["employee_id"], id_usuario),
             )
+            _sincronizar_sucursales_usuario(conexion, id_usuario, branch_ids)
             conexion.commit()
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error

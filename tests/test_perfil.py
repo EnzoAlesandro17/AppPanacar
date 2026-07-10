@@ -27,7 +27,7 @@ def test_asesor_no_puede_entrar_a_editar_otro_usuario(asesor):
 
 
 def test_perfil_no_muestra_campos_que_no_le_corresponden(asesor):
-    """Rol y empleado vinculado se editan desde /usuarios (Admin/BackOffice),
+    """Rol y empleado vinculado se editan desde /usuarios (IT/BackOffice),
     no desde la autogestión — acá solo hay usuario y contraseña."""
     resp = asesor.get("/usuarios/perfil")
 
@@ -62,7 +62,7 @@ def test_perfil_ignora_intento_de_escalar_rol_o_vincularse_a_un_empleado(asesor)
     asesor.post(
         "/usuarios/perfil",
         data={
-            "csrf_token": token, "username": "asesor_test", "role": "Admin", "employee_id": "999",
+            "csrf_token": token, "username": "asesor_test", "role": "IT", "employee_id": "999",
         },
         follow_redirects=True,
     )

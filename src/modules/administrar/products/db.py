@@ -1,8 +1,10 @@
 from src.db.connection import obtener_conexion
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.validaciones.vehicle_brands.db import TABLA as TABLA_VEHICLE_BRANDS
 
 TABLA = "products"
 TABLA_COMPATIBILIDAD = "product_compatibility"
+TABLA_SUCURSALES = "product_branches"
 
 
 def crear_tabla():
@@ -47,6 +49,17 @@ def crear_tabla():
         for columna, definicion in columnas_nuevas.items():
             if columna not in columnas:
                 conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN {columna} {definicion}")
+
+        conexion.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER NOT NULL REFERENCES {TABLA}(id),
+                branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
+                UNIQUE(product_id, branch_id)
+            )
+            """
+        )
 
         conexion.commit()
 

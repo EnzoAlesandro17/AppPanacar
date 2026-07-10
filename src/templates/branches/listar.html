@@ -4,7 +4,9 @@
 <h1>Sucursales</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('branches.nuevo') }}">+ Nueva sucursal</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('branches.borrados') }}">Ver borradas</a>
+    {% endif %}
 </p>
 <table>
     <thead>

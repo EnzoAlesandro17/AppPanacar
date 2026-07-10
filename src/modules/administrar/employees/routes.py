@@ -1,9 +1,9 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required, restringir_a_administracion
+from src.auth import login_required, requiere_ver_eliminados, restringir_a_administracion
 from src.breadcrumbs import migas
 from src.constants.validations import parsear_fecha_visual
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.employees.logic import (
     actualizar_empleado,
@@ -14,6 +14,7 @@ from src.modules.administrar.employees.logic import (
     obtener_sucursales_ids,
     reactivar_empleado,
 )
+from src.permissions import puede_ver_eliminados
 
 employees_bp = Blueprint("employees", __name__, url_prefix="/empleados")
 employees_bp.before_request(restringir_a_administracion)
@@ -69,6 +70,20 @@ def nuevo():
         try:
             datos = _datos_del_form()
             crear_empleado(**datos)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe un empleado borrado con ese DNI. Podés reactivarlo en vez de crear uno nuevo.",
+                "error",
+            )
+            return render_template(
+                "employees/formulario.html",
+                empleado={**dict(request.form), "id": None},
+                accion="nueva",
+                sucursales=sucursales,
+                sucursales_seleccionadas=_branch_ids_del_form(),
+                borrado_existente_id=error.id_existente,
+                migas=_migas("Nuevo empleado"),
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -135,6 +150,7 @@ def borrar(id_empleado):
 
 @employees_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     empleados = [e for e in listar_empleados(incluir_borrados=True) if e["status"] == 0]
     return render_template("employees/borrados.html", empleados=empleados, migas=_migas("Borrados"))
@@ -143,10 +159,12 @@ def borrados():
 @employees_bp.route("/<int:id_empleado>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_empleado):
+    destino = "employees.borrados" if puede_ver_eliminados(session.get("role")) else "employees.listar"
+
     if obtener_por_id(id_empleado) is None:
         flash("El empleado no existe.", "error")
-        return redirect(url_for("employees.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_empleado(id_empleado)
     flash("Empleado reactivado.", "success")
-    return redirect(url_for("employees.borrados"))
+    return redirect(url_for(destino))

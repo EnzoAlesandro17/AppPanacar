@@ -4,7 +4,9 @@
 <h1>Stock</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('products.nuevo') }}">+ Nuevo producto</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('products.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <div class="table-scroll">
 <table>
@@ -17,6 +19,7 @@
             <th>Lado</th>
             <th>Stock</th>
             <th>Ubicación</th>
+            <th>Sucursales</th>
             <th>Precio minorista</th>
             <th></th>
         </tr>
@@ -31,6 +34,7 @@
             <td>{{ producto['side'] or '—' }}</td>
             <td>{{ producto['stock'] if producto['stock'] is not none else '—' }}</td>
             <td>{{ producto['location'] or '—' }}</td>
+            <td>{{ producto['branch_names'] or '—' }}</td>
             <td>{{ producto['retail_price'] }}</td>
             <td>
                 <a href="{{ url_for('products.editar', id_producto=producto['id']) }}">Editar</a>
@@ -42,7 +46,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="9">No hay productos cargados.</td></tr>
+        <tr><td colspan="10">No hay productos cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

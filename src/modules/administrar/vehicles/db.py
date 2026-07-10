@@ -1,7 +1,9 @@
 from src.db.connection import obtener_conexion
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.validaciones.vehicle_brands.db import TABLA as TABLA_VEHICLE_BRANDS
 
 TABLA = "vehicles"
+TABLA_SUCURSALES = "vehicle_branches"
 
 
 def crear_tabla():
@@ -22,4 +24,16 @@ def crear_tabla():
             )
             """
         )
+
+        conexion.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehicle_id INTEGER NOT NULL REFERENCES {TABLA}(id),
+                branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
+                UNIQUE(vehicle_id, branch_id)
+            )
+            """
+        )
+
         conexion.commit()

@@ -1,8 +1,8 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required, restringir_a_administracion
+from src.auth import login_required, requiere_ver_eliminados, restringir_a_administracion
 from src.breadcrumbs import migas
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.validaciones.claim_statuses.logic import (
     actualizar_estado,
     borrar_estado,
@@ -12,6 +12,7 @@ from src.modules.administrar.validaciones.claim_statuses.logic import (
     reactivar_estado,
     reordenar_estados,
 )
+from src.permissions import puede_ver_eliminados
 
 claim_statuses_bp = Blueprint("claim_statuses", __name__, url_prefix="/estados-siniestro")
 claim_statuses_bp.before_request(restringir_a_administracion)
@@ -42,6 +43,15 @@ def nuevo():
         name = request.form.get("name", "").strip()
         try:
             crear_estado(name)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe un estado borrado con ese nombre. Podés reactivarlo en vez de crear uno nuevo.",
+                "error",
+            )
+            return render_template(
+                "claim_statuses/formulario.html", estado={"name": name}, accion="nueva",
+                borrado_existente_id=error.id_existente, migas=_migas("Nuevo estado"),
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -97,6 +107,7 @@ def borrar(id_estado):
 
 @claim_statuses_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     estados = [e for e in listar_estados(incluir_borrados=True) if e["status"] == 0]
     return render_template("claim_statuses/borrados.html", estados=estados, migas=_migas("Borrados"))
@@ -105,13 +116,15 @@ def borrados():
 @claim_statuses_bp.route("/<int:id_estado>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_estado):
+    destino = "claim_statuses.borrados" if puede_ver_eliminados(session.get("role")) else "claim_statuses.listar"
+
     if obtener_por_id(id_estado) is None:
         flash("El estado no existe.", "error")
-        return redirect(url_for("claim_statuses.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_estado(id_estado)
     flash("Estado reactivado.", "success")
-    return redirect(url_for("claim_statuses.borrados"))
+    return redirect(url_for(destino))
 
 
 @claim_statuses_bp.route("/reordenar", methods=["POST"])

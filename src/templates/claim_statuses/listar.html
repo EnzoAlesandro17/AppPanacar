@@ -4,7 +4,9 @@
 <h1>Estados de siniestro</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('claim_statuses.nuevo') }}">+ Nuevo estado</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('claim_statuses.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <table>
     <thead>

@@ -9,7 +9,7 @@ from functools import wraps
 
 from flask import flash, redirect, session, url_for
 
-from src.permissions import puede_acceder_administracion
+from src.permissions import puede_acceder_administracion, puede_ver_eliminados
 
 
 def login_required(vista):
@@ -22,8 +22,22 @@ def login_required(vista):
     return wrapper
 
 
+def requiere_ver_eliminados(vista):
+    """Para usar en cada vista `borrados()`: solo IT puede ver listas de
+    eliminados, en cualquier módulo (BackOffice y Asesor quedan afuera)."""
+
+    @wraps(vista)
+    def wrapper(*args, **kwargs):
+        if not puede_ver_eliminados(session.get("role")):
+            flash("No tenés permiso para ver eliminados.", "error")
+            return redirect(url_for("administrar.index"))
+        return vista(*args, **kwargs)
+
+    return wrapper
+
+
 def restringir_a_administracion():
-    """Para usar como before_request de blueprints reservados a Admin/
+    """Para usar como before_request de blueprints reservados a IT/
     BackOffice (Sucursales, Empleados, Usuarios, Validaciones, Contabilidad,
     Preguntas frecuentes). Deja pasar el request si no hay sesión (para que
     login_required en la vista se encargue del redirect a login); si hay

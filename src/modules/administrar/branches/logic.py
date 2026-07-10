@@ -2,7 +2,7 @@ import sqlite3
 
 from src.constants.validations import validar_campos_obligatorios, validar_email, validar_telefono
 from src.db.connection import obtener_conexion
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.branches.db import TABLA
 
 
@@ -24,11 +24,25 @@ def _traducir_error_integridad(error):
     return ValidationError("Ya existe una sucursal con alguno de esos datos únicos.")
 
 
+def _buscar_borrado_por_code(conexion, code):
+    if not code:
+        return None
+    return conexion.execute(f"SELECT id FROM {TABLA} WHERE code = ? AND status = 0", (code,)).fetchone()
+
+
 def crear_sucursal(name, code=None, country=None, city=None, address=None, email=None, phone=None):
-    """Valida y crea una sucursal nueva. Devuelve el id generado."""
+    """Valida y crea una sucursal nueva. Devuelve el id generado.
+
+    Si ya existe una sucursal borrada con ese mismo code, no crea una nueva:
+    levanta RegistroBorradoExistente para que la vista ofrezca reactivar la
+    que ya estaba en vez de chocar con el UNIQUE."""
     telefono_normalizado = _validar_datos(name, email, phone)
 
     with obtener_conexion() as conexion:
+        borrado = _buscar_borrado_por_code(conexion, code)
+        if borrado is not None:
+            raise RegistroBorradoExistente(borrado["id"])
+
         try:
             cursor = conexion.execute(
                 f"""

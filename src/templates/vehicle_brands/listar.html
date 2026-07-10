@@ -4,7 +4,9 @@
 <h1>Marcas de vehículos</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('vehicle_brands.nuevo') }}">+ Nueva marca</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('vehicle_brands.borrados') }}">Ver borradas</a>
+    {% endif %}
 </p>
 <table>
     <thead>

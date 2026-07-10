@@ -2,7 +2,7 @@ import sqlite3
 
 from src.constants.validations import validar_campos_obligatorios
 from src.db.connection import obtener_conexion
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.validaciones.claim_statuses.db import TABLA
 
 
@@ -10,11 +10,23 @@ def _traducir_error_integridad(error):
     return ValidationError("Ya existe un estado con ese nombre.")
 
 
+def _buscar_borrado_por_name(conexion, name):
+    return conexion.execute(f"SELECT id FROM {TABLA} WHERE name = ? AND status = 0", (name,)).fetchone()
+
+
 def crear_estado(name):
-    """Valida y crea un estado de siniestro nuevo. Devuelve el id generado."""
+    """Valida y crea un estado de siniestro nuevo. Devuelve el id generado.
+
+    Si ya existe un estado borrado con ese mismo nombre, no crea uno nuevo:
+    levanta RegistroBorradoExistente para que la vista ofrezca reactivar el
+    que ya estaba en vez de chocar con el UNIQUE."""
     validar_campos_obligatorios({"name": name})
 
     with obtener_conexion() as conexion:
+        borrado = _buscar_borrado_por_name(conexion, name)
+        if borrado is not None:
+            raise RegistroBorradoExistente(borrado["id"])
+
         try:
             cursor = conexion.execute(
                 f"""

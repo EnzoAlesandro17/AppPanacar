@@ -4,7 +4,9 @@
 <h1>Compañías de seguro</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('insurance_companies.nuevo') }}">+ Nueva compañía</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('insurance_companies.borrados') }}">Ver borradas</a>
+    {% endif %}
 </p>
 <table>
     <thead>

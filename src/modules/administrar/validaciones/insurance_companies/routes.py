@@ -1,8 +1,8 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required, restringir_a_administracion
+from src.auth import login_required, requiere_ver_eliminados, restringir_a_administracion
 from src.breadcrumbs import migas
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.validaciones.insurance_companies.logic import (
     actualizar_aseguradora,
     borrar_aseguradora,
@@ -12,6 +12,7 @@ from src.modules.administrar.validaciones.insurance_companies.logic import (
     reactivar_aseguradora,
     reordenar_aseguradoras,
 )
+from src.permissions import puede_ver_eliminados
 
 insurance_companies_bp = Blueprint("insurance_companies", __name__, url_prefix="/companias-seguro")
 insurance_companies_bp.before_request(restringir_a_administracion)
@@ -44,6 +45,15 @@ def nuevo():
         name = request.form.get("name", "").strip()
         try:
             crear_aseguradora(name)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe una compañía borrada con ese nombre. Podés reactivarla en vez de crear una nueva.",
+                "error",
+            )
+            return render_template(
+                "insurance_companies/formulario.html", aseguradora={"name": name}, accion="nueva",
+                borrado_existente_id=error.id_existente, migas=_migas("Nueva compañía"),
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -102,6 +112,7 @@ def borrar(id_aseguradora):
 
 @insurance_companies_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     aseguradoras = [a for a in listar_aseguradoras(incluir_borrados=True) if a["status"] == 0]
     return render_template(
@@ -112,13 +123,19 @@ def borrados():
 @insurance_companies_bp.route("/<int:id_aseguradora>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_aseguradora):
+    destino = (
+        "insurance_companies.borrados"
+        if puede_ver_eliminados(session.get("role"))
+        else "insurance_companies.listar"
+    )
+
     if obtener_por_id(id_aseguradora) is None:
         flash("La compañía de seguro no existe.", "error")
-        return redirect(url_for("insurance_companies.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_aseguradora(id_aseguradora)
     flash("Compañía de seguro reactivada.", "success")
-    return redirect(url_for("insurance_companies.borrados"))
+    return redirect(url_for(destino))
 
 
 @insurance_companies_bp.route("/reordenar", methods=["POST"])

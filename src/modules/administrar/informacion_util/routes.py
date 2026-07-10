@@ -1,6 +1,6 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required
+from src.auth import login_required, requiere_ver_eliminados
 from src.breadcrumbs import migas
 from src.exceptions import ValidationError
 from src.modules.administrar.informacion_util.logic import (
@@ -12,6 +12,7 @@ from src.modules.administrar.informacion_util.logic import (
     reactivar_enlace,
     reordenar_enlaces,
 )
+from src.permissions import puede_ver_eliminados
 
 informacion_util_bp = Blueprint("informacion_util", __name__, url_prefix="/links-utiles")
 
@@ -100,6 +101,7 @@ def borrar(id_enlace):
 
 @informacion_util_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     enlaces = [e for e in listar_enlaces(incluir_borrados=True) if e["status"] == 0]
     return render_template("informacion_util/borrados.html", enlaces=enlaces, migas=_migas("Borrados"))
@@ -108,13 +110,17 @@ def borrados():
 @informacion_util_bp.route("/<int:id_enlace>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_enlace):
+    destino = (
+        "informacion_util.borrados" if puede_ver_eliminados(session.get("role")) else "informacion_util.listar"
+    )
+
     if obtener_por_id(id_enlace) is None:
         flash("El enlace no existe.", "error")
-        return redirect(url_for("informacion_util.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_enlace(id_enlace)
     flash("Enlace reactivado.", "success")
-    return redirect(url_for("informacion_util.borrados"))
+    return redirect(url_for(destino))
 
 
 @informacion_util_bp.route("/reordenar", methods=["POST"])

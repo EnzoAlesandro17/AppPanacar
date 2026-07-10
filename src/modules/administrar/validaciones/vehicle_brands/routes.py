@@ -1,8 +1,8 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required, restringir_a_administracion
+from src.auth import login_required, requiere_ver_eliminados, restringir_a_administracion
 from src.breadcrumbs import migas
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.validaciones.vehicle_brands.logic import (
     actualizar_marca,
     borrar_marca,
@@ -12,6 +12,7 @@ from src.modules.administrar.validaciones.vehicle_brands.logic import (
     reactivar_marca,
     reordenar_marcas,
 )
+from src.permissions import puede_ver_eliminados
 
 vehicle_brands_bp = Blueprint("vehicle_brands", __name__, url_prefix="/marcas-vehiculos")
 vehicle_brands_bp.before_request(restringir_a_administracion)
@@ -42,6 +43,15 @@ def nuevo():
         name = request.form.get("name", "").strip()
         try:
             crear_marca(name)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe una marca borrada con ese nombre. Podés reactivarla en vez de crear una nueva.",
+                "error",
+            )
+            return render_template(
+                "vehicle_brands/formulario.html", marca={"name": name}, accion="nueva",
+                borrado_existente_id=error.id_existente, migas=_migas("Nueva marca"),
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -96,6 +106,7 @@ def borrar(id_marca):
 
 @vehicle_brands_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     marcas = [m for m in listar_marcas(incluir_borrados=True) if m["status"] == 0]
     return render_template("vehicle_brands/borrados.html", marcas=marcas, migas=_migas("Borrados"))
@@ -104,13 +115,15 @@ def borrados():
 @vehicle_brands_bp.route("/<int:id_marca>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_marca):
+    destino = "vehicle_brands.borrados" if puede_ver_eliminados(session.get("role")) else "vehicle_brands.listar"
+
     if obtener_por_id(id_marca) is None:
         flash("La marca no existe.", "error")
-        return redirect(url_for("vehicle_brands.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_marca(id_marca)
     flash("Marca reactivada.", "success")
-    return redirect(url_for("vehicle_brands.borrados"))
+    return redirect(url_for(destino))
 
 
 @vehicle_brands_bp.route("/reordenar", methods=["POST"])

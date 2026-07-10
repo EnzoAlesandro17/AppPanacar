@@ -1,8 +1,9 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required
+from src.auth import login_required, requiere_ver_eliminados
 from src.breadcrumbs import migas
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
+from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.employees.logic import listar_empleados
 from src.modules.administrar.employees.logic import obtener_por_id as obtener_empleado_por_id
 from src.modules.administrar.user.logic import (
@@ -13,11 +14,12 @@ from src.modules.administrar.user.logic import (
     iniciar_sesion,
     listar_usuarios,
     obtener_por_id,
+    obtener_sucursales_ids_usuario,
     reactivar_usuario,
     reordenar_usuarios,
     verificar_contrasena,
 )
-from src.permissions import puede_gestionar_usuarios
+from src.permissions import puede_gestionar_usuarios, puede_ver_eliminados
 
 user_bp = Blueprint("user", __name__, url_prefix="/usuarios")
 
@@ -40,12 +42,17 @@ def _requiere_gestion_usuarios():
     return None
 
 
+def _branch_ids_del_form():
+    return [int(valor) for valor in request.form.getlist("branch_ids") if valor.strip()]
+
+
 def _datos_del_form():
     employee_id = request.form.get("employee_id", "").strip()
     return {
         "username": request.form.get("username", "").strip(),
         "role": request.form.get("role", "").strip(),
         "employee_id": int(employee_id) if employee_id else None,
+        "branch_ids": _branch_ids_del_form(),
     }
 
 
@@ -84,6 +91,7 @@ def login():
         session["name"] = nombre
         session["iniciales"] = iniciales
         session["role"] = usuario["role"]
+        session["branch_ids"] = obtener_sucursales_ids_usuario(usuario["id"])
         return redirect(url_for("administrar.index"))
 
     return render_template("user/login.html")
@@ -114,24 +122,37 @@ def nuevo():
         return redireccion
 
     empleados = listar_empleados()
+    sucursales = listar_sucursales()
 
     if request.method == "POST":
         password = request.form.get("password", "").strip() or None
         try:
             datos = _datos_del_form()
             crear_usuario(password=password, **datos)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe un usuario borrado con ese nombre de usuario. "
+                "Podés reactivarlo en vez de crear uno nuevo.",
+                "error",
+            )
+            return render_template(
+                "user/formulario.html", usuario=dict(request.form), accion="nueva", roles=ROLES,
+                empleados=empleados, sucursales=sucursales, sucursales_seleccionadas=_branch_ids_del_form(),
+                borrado_existente_id=error.id_existente, migas=_migas("Nuevo usuario"),
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
                 "user/formulario.html", usuario=dict(request.form), accion="nueva", roles=ROLES,
-                empleados=empleados, migas=_migas("Nuevo usuario"),
+                empleados=empleados, sucursales=sucursales, sucursales_seleccionadas=_branch_ids_del_form(),
+                migas=_migas("Nuevo usuario"),
             )
         flash("Usuario creado.", "success")
         return redirect(url_for("user.listar"))
 
     return render_template(
         "user/formulario.html", usuario=None, accion="nueva", roles=ROLES, empleados=empleados,
-        migas=_migas("Nuevo usuario"),
+        sucursales=sucursales, sucursales_seleccionadas=[], migas=_migas("Nuevo usuario"),
     )
 
 
@@ -148,6 +169,7 @@ def editar(id_usuario):
         return redirect(url_for("user.listar"))
 
     empleados = listar_empleados()
+    sucursales = listar_sucursales()
 
     if request.method == "POST":
         password = request.form.get("password", "").strip() or None
@@ -163,6 +185,8 @@ def editar(id_usuario):
                 accion="editar",
                 roles=ROLES,
                 empleados=empleados,
+                sucursales=sucursales,
+                sucursales_seleccionadas=_branch_ids_del_form(),
                 migas=_migas("Editar usuario"),
             )
         flash("Usuario actualizado.", "success")
@@ -170,6 +194,7 @@ def editar(id_usuario):
 
     return render_template(
         "user/formulario.html", usuario=dict(usuario), accion="editar", roles=ROLES, empleados=empleados,
+        sucursales=sucursales, sucursales_seleccionadas=obtener_sucursales_ids_usuario(id_usuario),
         migas=_migas("Editar usuario"),
     )
 
@@ -196,6 +221,7 @@ def borrar(id_usuario):
 
 @user_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     redireccion = _requiere_gestion_usuarios()
     if redireccion:
@@ -212,13 +238,15 @@ def reactivar(id_usuario):
     if redireccion:
         return redireccion
 
+    destino = "user.borrados" if puede_ver_eliminados(session.get("role")) else "user.listar"
+
     if obtener_por_id(id_usuario) is None:
         flash("El usuario no existe.", "error")
-        return redirect(url_for("user.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_usuario(id_usuario)
     flash("Usuario reactivado.", "success")
-    return redirect(url_for("user.borrados"))
+    return redirect(url_for(destino))
 
 
 @user_bp.route("/reordenar", methods=["POST"])

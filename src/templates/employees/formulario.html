@@ -44,4 +44,11 @@
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
+
+{% if borrado_existente_id %}
+<form method="post" action="{{ url_for('employees.reactivar', id_empleado=borrado_existente_id) }}" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-success">Reactivar el empleado existente</button>
+</form>
+{% endif %}
 {% endblock %}

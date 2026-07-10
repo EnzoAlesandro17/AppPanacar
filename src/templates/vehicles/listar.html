@@ -4,7 +4,9 @@
 <h1>Vehículos</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('vehicles.nuevo') }}">+ Nuevo vehículo</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('vehicles.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <table>
     <thead>
@@ -14,6 +16,7 @@
             <th>Modelo</th>
             <th>Año</th>
             <th>Color</th>
+            <th>Sucursales</th>
             <th></th>
         </tr>
     </thead>
@@ -25,6 +28,7 @@
             <td>{{ vehiculo['model'] }}</td>
             <td>{{ vehiculo['year'] }}</td>
             <td>{{ vehiculo['color'] or '—' }}</td>
+            <td>{{ vehiculo['branch_names'] or '—' }}</td>
             <td>
                 <a href="{{ url_for('vehicles.editar', id_vehiculo=vehiculo['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('vehicles.borrar', id_vehiculo=vehiculo['id']) }}"
@@ -35,7 +39,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">No hay vehículos cargados.</td></tr>
+        <tr><td colspan="7">No hay vehículos cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

@@ -1,7 +1,9 @@
 from src.db.connection import obtener_conexion
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.employees.db import TABLA as TABLA_EMPLOYEES
 
 TABLA = "users"
+TABLA_SUCURSALES = "user_branches"
 
 _COLUMNAS_FINALES = f"""
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,6 +39,21 @@ def crear_tabla():
                 )
             if "sort_order" not in columnas:
                 conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+
+        # Rename de rol: "Admin" pasó a llamarse "IT". Update idempotente,
+        # no hace nada una vez que ya no quedan filas con el nombre viejo.
+        conexion.execute(f"UPDATE {TABLA} SET role = 'IT' WHERE role = 'Admin'")
+
+        conexion.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES {TABLA}(id),
+                branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
+                UNIQUE(user_id, branch_id)
+            )
+            """
+        )
 
         conexion.commit()
 

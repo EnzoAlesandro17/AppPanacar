@@ -9,7 +9,7 @@ from src.constants.validations import (
     validar_telefono,
 )
 from src.db.connection import obtener_conexion
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.employees.db import TABLA, TABLA_SUCURSALES
 
@@ -84,15 +84,27 @@ def obtener_sucursales(id_empleado):
         ).fetchall()
 
 
+def _buscar_borrado_por_dni(conexion, dni):
+    return conexion.execute(f"SELECT id FROM {TABLA} WHERE dni = ? AND status = 0", (dni,)).fetchone()
+
+
 def crear_empleado(position, name, last_name, dni, birth_date=None, email=None, phone=None,
                     emergency_contact_name=None, emergency_contact_phone=None, branch_ids=None):
-    """Valida y crea un empleado nuevo. Devuelve el id generado."""
+    """Valida y crea un empleado nuevo. Devuelve el id generado.
+
+    Si ya existe un empleado borrado con ese mismo DNI, no crea uno nuevo:
+    levanta RegistroBorradoExistente para que la vista ofrezca reactivar el
+    que ya estaba en vez de chocar con el UNIQUE."""
     telefono_normalizado, contacto_telefono_normalizado = _validar_datos(
         position, name, last_name, dni, birth_date, email, phone,
         emergency_contact_name, emergency_contact_phone,
     )
 
     with obtener_conexion() as conexion:
+        borrado = _buscar_borrado_por_dni(conexion, dni)
+        if borrado is not None:
+            raise RegistroBorradoExistente(borrado["id"])
+
         try:
             cursor = conexion.execute(
                 f"""

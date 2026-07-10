@@ -4,7 +4,9 @@
 <h1>Clientes</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('clients.nuevo') }}">+ Nuevo cliente</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('clients.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <table>
     <thead>
@@ -13,6 +15,7 @@
             <th>DNI/CUIT</th>
             <th>Teléfono</th>
             <th>Email</th>
+            <th>Sucursales</th>
             <th></th>
         </tr>
     </thead>
@@ -23,6 +26,7 @@
             <td>{{ cliente['dni_cuit'] }}</td>
             <td>{{ cliente['phone'] or '—' }}</td>
             <td>{{ cliente['email'] or '—' }}</td>
+            <td>{{ cliente['branch_names'] or '—' }}</td>
             <td>
                 <a href="{{ url_for('clients.editar', id_cliente=cliente['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('clients.borrar', id_cliente=cliente['id']) }}"
@@ -33,7 +37,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">No hay clientes cargados.</td></tr>
+        <tr><td colspan="6">No hay clientes cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

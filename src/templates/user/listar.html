@@ -4,7 +4,9 @@
 <h1>Usuarios</h1>
 <p class="acciones">
     <a class="btn btn-secondary" href="{{ url_for('user.nuevo') }}">+ Nuevo usuario</a>
+    {% if session.get('role') == 'IT' %}
     <a class="btn btn-secondary" href="{{ url_for('user.borrados') }}">Ver borrados</a>
+    {% endif %}
 </p>
 <table>
     <thead>

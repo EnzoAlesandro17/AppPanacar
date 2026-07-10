@@ -1,8 +1,8 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from src.auth import login_required, restringir_a_administracion
+from src.auth import login_required, requiere_ver_eliminados, restringir_a_administracion
 from src.breadcrumbs import migas
-from src.exceptions import ValidationError
+from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.branches.logic import (
     actualizar_sucursal,
     borrar_sucursal,
@@ -12,6 +12,7 @@ from src.modules.administrar.branches.logic import (
     reactivar_sucursal,
     reordenar_sucursales,
 )
+from src.permissions import puede_ver_eliminados
 
 branches_bp = Blueprint("branches", __name__, url_prefix="/sucursales")
 branches_bp.before_request(restringir_a_administracion)
@@ -50,6 +51,15 @@ def nuevo():
         datos = _datos_del_form()
         try:
             crear_sucursal(**datos)
+        except RegistroBorradoExistente as error:
+            flash(
+                "Ya existe una sucursal borrada con ese code. Podés reactivarla en vez de crear una nueva.",
+                "error",
+            )
+            return render_template(
+                "branches/formulario.html", sucursal=datos, accion="nueva",
+                borrado_existente_id=error.id_existente, migas=_migas("Nueva sucursal")
+            )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
@@ -104,6 +114,7 @@ def borrar(id_sucursal):
 
 @branches_bp.route("/borrados")
 @login_required
+@requiere_ver_eliminados
 def borrados():
     sucursales = [s for s in listar_sucursales(incluir_borrados=True) if s["status"] == 0]
     return render_template("branches/borrados.html", sucursales=sucursales, migas=_migas("Borrados"))
@@ -112,13 +123,15 @@ def borrados():
 @branches_bp.route("/<int:id_sucursal>/reactivar", methods=["POST"])
 @login_required
 def reactivar(id_sucursal):
+    destino = "branches.borrados" if puede_ver_eliminados(session.get("role")) else "branches.listar"
+
     if obtener_por_id(id_sucursal) is None:
         flash("La sucursal no existe.", "error")
-        return redirect(url_for("branches.borrados"))
+        return redirect(url_for(destino))
 
     reactivar_sucursal(id_sucursal)
     flash("Sucursal reactivada.", "success")
-    return redirect(url_for("branches.borrados"))
+    return redirect(url_for(destino))
 
 
 @branches_bp.route("/reordenar", methods=["POST"])

@@ -38,10 +38,10 @@ def extraer_csrf_meta(html):
 
 @pytest.fixture
 def admin(client):
-    """Crea un Admin directo en la base (sin pasar por /usuarios/nuevo) y lo loguea. Devuelve el client logueado."""
+    """Crea un usuario IT directo en la base (sin pasar por /usuarios/nuevo) y lo loguea. Devuelve el client logueado."""
     from src.modules.administrar.user.logic import crear_usuario
 
-    crear_usuario(username="admin_test", password="clave-segura-123", role="Admin")
+    crear_usuario(username="admin_test", password="clave-segura-123", role="IT")
 
     resp = client.get("/usuarios/login")
     token = extraer_csrf(resp.data)

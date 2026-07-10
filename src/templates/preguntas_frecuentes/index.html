@@ -11,7 +11,7 @@
     <details class="faq-item">
         <summary>¿Qué es cada tile de "Sistema de gestión" (la pantalla de inicio)?</summary>
         <p><strong>Administración</strong> agrupa todo lo administrativo: sucursales, empleados,
-            usuarios, catálogos y contabilidad — solo la ven Admin y BackOffice.
+            usuarios, catálogos y contabilidad — solo la ven IT y BackOffice.
             <strong>Siniestros</strong> todavía está sin terminar. <strong>Clientes</strong>,
             <strong>Vehículos</strong> y <strong>Stock</strong> son el día a día del taller.
             <strong>Links útiles</strong> son accesos directos que el equipo va cargando (bancos,
@@ -19,11 +19,21 @@
     </details>
 
     <details class="faq-item">
-        <summary>¿Qué son los roles Admin, BackOffice y Asesor?</summary>
-        <p>Admin y BackOffice tienen acceso a toda la sección Administración (con Admin por
-            encima de BackOffice en algunas cosas, como cambiar la contraseña de otro Admin).
+        <summary>¿Qué son los roles IT, BackOffice y Asesor?</summary>
+        <p>IT y BackOffice tienen acceso a toda la sección Administración (con IT por
+            encima de BackOffice en algunas cosas, como cambiar la contraseña de otro IT).
             Asesor es el rol del día a día: Clientes, Vehículos, Stock y demás, pero no ve
-            Administración.</p>
+            Administración. Solo IT puede ver listas de eliminados en cualquier módulo;
+            si BackOffice o Asesor cargan un dato que ya existía borrado, el sistema les
+            ofrece reactivarlo en vez de rechazarlo por duplicado.</p>
+    </details>
+
+    <details class="faq-item">
+        <summary>¿Por qué a veces no veo un cliente, vehículo o producto que cargó otra persona?</summary>
+        <p>Cada usuario pertenece a una o varias sucursales (se configura desde Usuarios).
+            Clientes, Vehículos y Stock se pueden asignar a una o más sucursales, y por
+            default solo se ven los que comparten alguna sucursal con vos. Un registro sin
+            ninguna sucursal asignada se ve desde cualquier lado.</p>
     </details>
 
     <details class="faq-item">
@@ -46,7 +56,7 @@
     <details class="faq-item">
         <summary>¿Por qué "Mi cuenta" solo tiene usuario y contraseña?</summary>
         <p>Los datos personales (nombre, DNI, puesto, contacto de emergencia) viven en
-            Empleados, dentro de Administración, y solo los edita Admin/BackOffice. Nadie puede
+            Empleados, dentro de Administración, y solo los edita IT/BackOffice. Nadie puede
             subirse de rol ni cambiarse de sucursal editando su propia cuenta.</p>
     </details>
 
@@ -126,8 +136,10 @@
     <details class="faq-item">
         <summary>Cuando "borro" algo, ¿se pierde para siempre?</summary>
         <p>No. Es un borrado lógico: el registro se marca como inactivo y desaparece del
-            listado, pero sigue existiendo. Se puede recuperar desde "Ver borrados" y
-            "Reactivar".</p>
+            listado, pero sigue existiendo. Solo IT puede ver la lista de "Ver borrados" y
+            reactivar desde ahí. Si sos BackOffice o Asesor y cargás de nuevo un registro que
+            ya existía borrado (mismo DNI/CUIT, dominio, code, etc.), el sistema te ofrece
+            reactivar el que ya estaba en vez de rechazarlo por duplicado.</p>
     </details>
 
     <details class="faq-item">

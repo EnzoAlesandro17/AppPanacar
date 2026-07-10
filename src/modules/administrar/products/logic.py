@@ -2,8 +2,9 @@ import sqlite3
 
 from src.constants.validations import validar_campos_obligatorios
 from src.db.connection import obtener_conexion
-from src.exceptions import ValidationError
-from src.modules.administrar.products.db import TABLA, TABLA_COMPATIBILIDAD
+from src.exceptions import RegistroBorradoExistente, ValidationError
+from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
+from src.modules.administrar.products.db import TABLA, TABLA_COMPATIBILIDAD, TABLA_SUCURSALES
 from src.modules.administrar.validaciones.vehicle_brands.db import TABLA as TABLA_VEHICLE_BRANDS
 from src.modules.administrar.validaciones.vehicle_brands.logic import (
     obtener_por_id as obtener_marca_por_id,
@@ -93,16 +94,74 @@ def _traducir_error_integridad(error):
     return ValidationError("Ya existe un producto con alguno de esos datos únicos.")
 
 
+def _sincronizar_sucursales_producto(conexion, id_producto, branch_ids):
+    """Reemplaza el set de sucursales asociadas a un producto por branch_ids.
+    branch_ids=None no toca nada (se usa en updates parciales); una lista
+    vacía borra todas las asociaciones."""
+    if branch_ids is None:
+        return
+
+    for branch_id in branch_ids:
+        sucursal = conexion.execute(
+            f"SELECT id FROM {TABLA_BRANCHES} WHERE id = ? AND status = 1", (branch_id,)
+        ).fetchone()
+        if sucursal is None:
+            raise ValidationError("Una de las sucursales indicadas no existe.")
+
+    conexion.execute(f"DELETE FROM {TABLA_SUCURSALES} WHERE product_id = ?", (id_producto,))
+    for branch_id in branch_ids:
+        conexion.execute(
+            f"INSERT INTO {TABLA_SUCURSALES} (product_id, branch_id) VALUES (?, ?)",
+            (id_producto, branch_id),
+        )
+
+
+def obtener_sucursales_ids_producto(id_producto):
+    """Ids de las sucursales asociadas a un producto."""
+    with obtener_conexion() as conexion:
+        filas = conexion.execute(
+            f"SELECT branch_id FROM {TABLA_SUCURSALES} WHERE product_id = ?", (id_producto,)
+        ).fetchall()
+        return [fila["branch_id"] for fila in filas]
+
+
+def visible_para_sucursales(id_producto, branch_ids_sesion):
+    """True si el producto debería ser visible para alguien con esas sucursales.
+
+    Un producto sin ninguna sucursal asignada queda visible para todos (dato
+    sin asignar, no oculto); si tiene alguna, hace falta compartir al menos
+    una con la sesión. branch_ids_sesion=None significa sin restricción."""
+    if branch_ids_sesion is None:
+        return True
+    sucursales_producto = obtener_sucursales_ids_producto(id_producto)
+    if not sucursales_producto:
+        return True
+    return any(branch_id in branch_ids_sesion for branch_id in sucursales_producto)
+
+
+def _buscar_borrado_por_code(conexion, code):
+    return conexion.execute(f"SELECT id FROM {TABLA} WHERE code = ? AND status = 0", (code,)).fetchone()
+
+
 def crear_producto(code, name, category, brand, description, stock, wholesale_price, retail_price,
                     product_type="Autoparte", oem_code=None, side=None, condition=None,
-                    supplier=None, location=None, purchase_date=None, purchase_price=None):
-    """Valida y crea un producto nuevo. Devuelve el id generado."""
+                    supplier=None, location=None, purchase_date=None, purchase_price=None,
+                    branch_ids=None):
+    """Valida y crea un producto nuevo. Devuelve el id generado.
+
+    Si ya existe un producto borrado con ese mismo code, no crea uno nuevo:
+    levanta RegistroBorradoExistente para que la vista ofrezca reactivar el
+    que ya estaba en vez de chocar con el UNIQUE."""
     _validar_datos(
         code, name, category, brand, description, stock, wholesale_price, retail_price,
         product_type, oem_code, side, condition, supplier, location, purchase_date, purchase_price,
     )
 
     with obtener_conexion() as conexion:
+        borrado = _buscar_borrado_por_code(conexion, code)
+        if borrado is not None:
+            raise RegistroBorradoExistente(borrado["id"])
+
         try:
             cursor = conexion.execute(
                 f"""
@@ -116,8 +175,10 @@ def crear_producto(code, name, category, brand, description, stock, wholesale_pr
                  product_type, oem_code, side, condition, supplier, location,
                  purchase_date, purchase_price),
             )
+            id_producto = cursor.lastrowid
+            _sincronizar_sucursales_producto(conexion, id_producto, branch_ids if branch_ids is not None else [])
             conexion.commit()
-            return cursor.lastrowid
+            return id_producto
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
 
@@ -132,14 +193,43 @@ def obtener_por_code(code):
         return conexion.execute(f"SELECT * FROM {TABLA} WHERE code = ?", (code,)).fetchone()
 
 
-def listar_productos(incluir_borrados=False):
-    consulta = f"SELECT * FROM {TABLA}"
+def listar_productos(incluir_borrados=False, branch_ids=None):
+    """branch_ids=None no filtra por sucursal. Si se pasa una lista, solo
+    devuelve productos sin ninguna sucursal asignada (dato sin asignar,
+    visible para todos) o que comparten alguna con branch_ids."""
+    condiciones = []
+    parametros = []
+
     if not incluir_borrados:
-        consulta += " WHERE status = 1"
-    consulta += " ORDER BY name"
+        condiciones.append(f"{TABLA}.status = 1")
+
+    if branch_ids is not None:
+        placeholders = ", ".join("?" for _ in branch_ids) if branch_ids else "NULL"
+        condiciones.append(
+            f"""(
+                NOT EXISTS (SELECT 1 FROM {TABLA_SUCURSALES} WHERE {TABLA_SUCURSALES}.product_id = {TABLA}.id)
+                OR EXISTS (
+                    SELECT 1 FROM {TABLA_SUCURSALES}
+                    WHERE {TABLA_SUCURSALES}.product_id = {TABLA}.id
+                        AND {TABLA_SUCURSALES}.branch_id IN ({placeholders})
+                )
+            )"""
+        )
+        parametros.extend(branch_ids)
+
+    consulta = f"""
+        SELECT {TABLA}.*, GROUP_CONCAT({TABLA_BRANCHES}.name, ', ') AS branch_names
+        FROM {TABLA}
+        LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.product_id = {TABLA}.id
+        LEFT JOIN {TABLA_BRANCHES}
+            ON {TABLA_BRANCHES}.id = {TABLA_SUCURSALES}.branch_id AND {TABLA_BRANCHES}.status = 1
+    """
+    if condiciones:
+        consulta += " WHERE " + " AND ".join(condiciones)
+    consulta += f" GROUP BY {TABLA}.id ORDER BY {TABLA}.name"
 
     with obtener_conexion() as conexion:
-        return conexion.execute(consulta).fetchall()
+        return conexion.execute(consulta, parametros).fetchall()
 
 
 def buscar_por_nombre(texto):
@@ -159,8 +249,11 @@ def buscar_por_nombre(texto):
 def actualizar_producto(id_producto, code=None, name=None, category=None, brand=None,
                          description=None, stock=None, wholesale_price=None, retail_price=None,
                          product_type=None, oem_code=None, side=None, condition=None,
-                         supplier=None, location=None, purchase_date=None, purchase_price=None):
-    """Actualiza los campos recibidos; los que se pasan en None mantienen su valor actual."""
+                         supplier=None, location=None, purchase_date=None, purchase_price=None,
+                         branch_ids=None):
+    """Actualiza los campos recibidos; los que se pasan en None mantienen su
+    valor actual. branch_ids=None mantiene las sucursales actuales; para
+    vaciarlas pasar branch_ids=[]."""
     producto_actual = obtener_por_id(id_producto)
     if producto_actual is None:
         raise ValidationError("El producto no existe.")
@@ -210,6 +303,7 @@ def actualizar_producto(id_producto, code=None, name=None, category=None, brand=
                     nuevos["purchase_date"], nuevos["purchase_price"], id_producto,
                 ),
             )
+            _sincronizar_sucursales_producto(conexion, id_producto, branch_ids)
             conexion.commit()
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
