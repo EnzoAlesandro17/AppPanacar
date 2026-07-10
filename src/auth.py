@@ -5,6 +5,7 @@ por proceso tenía sentido con Tkinter, pero en un servidor web cada request
 puede ser de una sucursal o persona distinta.
 """
 
+from datetime import date
 from functools import wraps
 
 from flask import flash, redirect, session, url_for
@@ -17,6 +18,15 @@ def login_required(vista):
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("user.login"))
+
+        # Corte por día calendario: aunque la cookie siga viva, una sesión
+        # abierta un día anterior no sirve para hoy. Fuerza login de nuevo
+        # al menos una vez por día, sin importar la actividad.
+        if session.get("login_date") != date.today().isoformat():
+            session.clear()
+            flash("Tu sesión expiró. Iniciá sesión de nuevo.", "error")
+            return redirect(url_for("user.login"))
+
         return vista(*args, **kwargs)
 
     return wrapper

@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
 from src.auth import login_required, requiere_ver_eliminados
@@ -87,11 +89,13 @@ def login():
             return redirect(url_for("user.login"))
 
         nombre, iniciales = _nombre_sesion(usuario)
+        session.permanent = True
         session["user_id"] = usuario["id"]
         session["name"] = nombre
         session["iniciales"] = iniciales
         session["role"] = usuario["role"]
         session["branch_ids"] = obtener_sucursales_ids_usuario(usuario["id"])
+        session["login_date"] = date.today().isoformat()
         return redirect(url_for("administrar.index"))
 
     return render_template("user/login.html")

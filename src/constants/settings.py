@@ -5,3 +5,4 @@ class Settings:
     # Configuraciones lógicas
     TIMEOUT_SECONDS = 30
     MAX_LOGIN_ATTEMPTS = 3
+    SESSION_LIFETIME_HOURS = 24

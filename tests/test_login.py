@@ -74,3 +74,40 @@ def test_login_http_sin_csrf_token_devuelve_400(client, usuario_creado):
     resp = client.post("/usuarios/login", data={"username": "ana", "password": "clave-segura-123"})
 
     assert resp.status_code == 400
+
+
+def test_sesion_de_un_dia_anterior_expira(client, usuario_creado):
+    """login_required corta la sesión si login_date no es el día de hoy,
+    aunque la cookie siga viva (corte por día calendario, no por inactividad)."""
+    from tests.conftest import extraer_csrf
+
+    resp = client.get("/usuarios/login")
+    token = extraer_csrf(resp.data)
+    client.post(
+        "/usuarios/login",
+        data={"csrf_token": token, "username": "ana", "password": "clave-segura-123"},
+    )
+
+    with client.session_transaction() as sess:
+        sess["login_date"] = "2000-01-01"
+
+    resp = client.get("/", follow_redirects=True)
+
+    assert b"Tu sesi\xc3\xb3n expir\xc3\xb3" in resp.data
+    with client.session_transaction() as sess:
+        assert "user_id" not in sess
+
+
+def test_sesion_del_mismo_dia_sigue_activa(client, usuario_creado):
+    from tests.conftest import extraer_csrf
+
+    resp = client.get("/usuarios/login")
+    token = extraer_csrf(resp.data)
+    client.post(
+        "/usuarios/login",
+        data={"csrf_token": token, "username": "ana", "password": "clave-segura-123"},
+    )
+
+    resp = client.get("/")
+
+    assert resp.status_code == 200

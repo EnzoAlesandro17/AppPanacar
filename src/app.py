@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from flask import Flask
 from flask_wtf import CSRFProtect
 
@@ -58,6 +60,14 @@ def _inicializar_tablas():
 def create_app():
     app = Flask(__name__)
     app.secret_key = SECRET_KEY
+    # Vencimiento de la cookie de sesión: respaldo a nivel cookie del corte por
+    # día calendario que hace login_required() en src/auth.py (ese es el que
+    # realmente fuerza "una sesión no sirve para otro día"; esto solo evita que
+    # la cookie en sí quede viva más de un día si nunca se vuelve a pisar).
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=Settings.SESSION_LIFETIME_HOURS)
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = False
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     CSRFProtect(app)
 
     @app.context_processor
