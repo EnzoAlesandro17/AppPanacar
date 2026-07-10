@@ -100,6 +100,11 @@ QUÉ SEGUIRÍA HACIENDO
   ya existe).
 - Migraciones de esquema reales (ALTER TABLE) como norma y no como
   excepción para columnas nuevas.
+- Exportar la base de datos: poder sacar todo el contenido (clientes,
+  vehículos, siniestros, etc.) a un formato legible fuera de la app (ej.
+  CSV o un dump), para tener un registro propio e independiente del
+  sistema. Importa aunque el día a día siga andando bien: si en algún
+  momento se deja de usar la app, no debería perderse el historial.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
@@ -196,23 +201,83 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
 ---------------------------------------------------------------------
 - Sucursales acotadas: cada usuario pertenece a una sola sucursal y responde
   en nombre de ella.
+- Sucursales quedan separadas aunque dos operen muy cerca físicamente (ej.
+  Taller y Oficina, misma cuadra, distinta dirección): a futuro cada una
+  puede necesitar sus propios datos administrativos (número de servicio de
+  internet, características del local, planos, arreglos pendientes, etc.),
+  y eso solo tiene sentido si cada una es su propio registro. Hoy hay 3
+  sucursales reales: Taller, Oficina y AresesCar (concesionaria, code
+  1concesionaria — vende autos, no hace chapería/pintura). Queda abierta
+  la duda de si Oficina debería ser sucursal aparte o un anexo
+  administrativo del Taller, pero no bloquea nada: ya está modelada como
+  propia.
 - 2FA (TOTP con pyotp) para el login.
 - Módulo de siniestros: ya tiene tile y una página placeholder
   (/siniestros). Es la entidad real que une cliente + vehículo +
   aseguradora (no un dato suelto de cada uno por separado). Un mismo
   cliente puede tener varios siniestros, cada uno con su propia aseguradora
-  y su propio vehículo. Necesita:
-    - Un id legible para humanos (no solo el autoincrement de la tabla),
-      pensado como un resumen de patente + DNI, para identificar un
-      siniestro de un vistazo sin abrir el registro.
+  y su propio vehículo. Diseño charlado, todavía sin implementar:
+    - Sucursal: una sola (FK simple), no N:N como Clientes/Vehículos/Stock
+      — un siniestro se abre y se gestiona desde un lugar concreto, a
+      diferencia de esas otras entidades que sí pueden compartirse entre
+      sucursales.
     - Selector de cliente existente o alta de uno nuevo sin salir del
-      formulario del siniestro.
-    - Selector de vehículo existente o alta de uno nuevo sin salir del
-      formulario.
-    - Selector de compañía de seguro y de estado (ya existen los catálogos
-      insurance_companies/claim_statuses, falta el módulo que los consuma).
-    - El resto de los datos del siniestro (fecha, descripción, etc.)
-      todavía sin definir.
+      formulario del siniestro; mismo criterio para vehículo.
+    - Cliente y Vehículo son entidades independientes y persistentes en el
+      tiempo, no atadas entre sí: si el mismo auto reingresa (misma
+      patente, no cambia), es el mismo registro de vehículo de siempre, y
+      puede venir de la mano de un cliente distinto al de la vez anterior.
+      El siniestro es la foto de esa vez puntual (este cliente + este auto
+      + esta vez), nunca un vínculo de dueño fijo — refuerza la decisión
+      ya tomada de "vehicles sin client_id a propósito".
+    - Ubicación/estado del auto (dónde está: no ingresó, en tal sucursal,
+      listo, retirado por el cliente, etc.): dado que el vehículo persiste
+      independiente del siniestro, este dato cuelga del VEHÍCULO, no del
+      siniestro — un siniestro puede generar un cambio de ubicación (y
+      quedar linkeado a cuál lo generó, para trazabilidad), pero el auto
+      no queda atado a ese siniestro para siempre. Mismo patrón de
+      historial que los cambios de estado del siniestro. Sirve también
+      para el futuro módulo de ventas/concesionaria, no es exclusivo de
+      Siniestros. Todavía sin diseñar en detalle a propósito — se resuelve
+      cuando se encare el formulario de siniestro (y de nuevo cuando se
+      diseñe Ventas).
+    - Estado actual: FK a claim_statuses (el catálogo ya existe, editable
+      y reordenable desde Validaciones). El siniestro nunca se "cierra"
+      con un flag booleano tipo Tareas: camina por los estados del
+      catálogo hasta llegar a uno final (ej. "Finalizado"), y sigue
+      existiendo con su historial completo por si el cliente vuelve con
+      un reclamo más adelante.
+    - Historial de cambios de estado: tabla aparte (siniestro, estado
+      anterior, estado nuevo, quién lo cambió, cuándo) para tener una
+      línea de tiempo limpia, separada de los comentarios sueltos.
+    - Tareas/pendientes: un subsistema PROPIO de Siniestros, no reusar el
+      módulo Tareas general — cosas para hacer asociadas a la gestión de
+      ese siniestro puntual.
+    - "Actividad" del siniestro: una sola pantalla que mezcla, en orden
+      cronológico, comentarios libres + cambios de estado + los
+      pendientes de ese siniestro — más completo que el hilo plano de
+      comentarios que tiene Tareas.
+    - Id: por ahora un id genérico (autoincrement de la tabla). La idea
+      vieja de un id legible (resumen patente + DNI) queda pospuesta para
+      más adelante, no es prioridad ahora.
+    - Calendario: vista semanal clásica (lunes a domingo) de los
+      pendientes con vencimiento, más una lista de "vencidas" debajo para
+      entrar rápido a la tarea/siniestro correspondiente. Requiere que los
+      pendientes tengan fecha de vencimiento (campo nuevo, no existe hoy
+      ni en este subsistema ni en Tareas).
+    - El resto de los datos del siniestro (fecha de apertura, descripción
+      inicial, etc.) todavía sin terminar de definir.
+    - Orden sugerido para encararlo: primero el núcleo (cliente + vehículo
+      + aseguradora + estado, con su historial) andando de punta a punta;
+      recién después sumar el subsistema de tareas propio, el calendario y
+      la ubicación del auto. Se planeó bastante de una sola vez en esta
+      charla — mejor no intentar construirlo todo junto.
+- Ventas/concesionaria (AresesCar): cuando se diseñe, que sea su propio
+  módulo con sus propios estados, no una variante de Siniestros. Comparte
+  Clientes/Vehículos/ubicación del auto con Siniestros, pero un auto en
+  venta no debería heredar el catálogo claim_statuses ni la forma de un
+  siniestro solo porque se parecen por fuera: son procesos de negocio
+  distintos aunque toquen las mismas entidades.
 
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)
