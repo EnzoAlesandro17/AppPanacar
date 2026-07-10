@@ -22,7 +22,7 @@
     <tbody>
         {% for cliente in clientes %}
         <tr>
-            <td>{{ cliente['name'] }} {{ cliente['last_name'] }}</td>
+            <td>{{ cliente['last_name'] }}, {{ cliente['name'] }}</td>
             <td>{{ cliente['dni_cuit'] }}</td>
             <td>{{ cliente['phone'] or '—' }}</td>
             <td>{{ cliente['email'] or '—' }}</td>
@@ -30,7 +30,7 @@
             <td>
                 <a href="{{ url_for('clients.editar', id_cliente=cliente['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('clients.borrar', id_cliente=cliente['id']) }}"
-                      onsubmit="return confirm('¿Borrar al cliente {{ cliente['name'] }} {{ cliente['last_name'] }}?');" style="display:inline">
+                      onsubmit="return confirm('¿Borrar al cliente {{ cliente['last_name'] }}, {{ cliente['name'] }}?');" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>

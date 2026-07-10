@@ -11,6 +11,7 @@ from src.modules.administrar.employees.logic import (
     obtener_sucursales,
     obtener_sucursales_ids,
     reactivar_empleado,
+    reordenar_empleados,
 )
 from tests.conftest import extraer_csrf
 
@@ -115,7 +116,7 @@ def test_crud_empleados_por_http(admin):
     assert b"Empleado creado" in resp.data
 
     resp = admin.get("/empleados/")
-    assert b"Http Test" in resp.data
+    assert b"Test, Http" in resp.data
     assert b"Chapista" in resp.data
 
 
@@ -159,7 +160,7 @@ def test_login_usa_nombre_del_empleado_vinculado(app, client):
         data={"csrf_token": token, "username": "juanp", "password": "clave-segura-123"},
         follow_redirects=True,
     )
-    assert b"Juan Perez" in resp.data
+    assert b"Perez, Juan" in resp.data
 
 
 def test_login_sin_empleado_vinculado_usa_el_username(app, client):
@@ -274,3 +275,14 @@ def test_crud_empleados_por_http_con_varias_sucursales(admin):
 
     resp = admin.get("/empleados/")
     assert b"Sucursal HTTP Uno, Sucursal HTTP Dos" in resp.data
+
+
+def test_reordenar_empleados_aplica_el_nuevo_orden(app):
+    id_1 = crear_empleado(position="Chapista", name="Ana", last_name="Uno", dni="30111240")
+    id_2 = crear_empleado(position="Chapista", name="Bea", last_name="Dos", dni="30111241")
+
+    assert [e["id"] for e in listar_empleados()] == [id_1, id_2]
+
+    reordenar_empleados([id_2, id_1])
+
+    assert [e["id"] for e in listar_empleados()] == [id_2, id_1]

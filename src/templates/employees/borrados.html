@@ -16,7 +16,7 @@
     <tbody>
         {% for empleado in empleados %}
         <tr>
-            <td>{{ empleado['name'] }} {{ empleado['last_name'] }}</td>
+            <td>{{ empleado['last_name'] }}, {{ empleado['name'] }}</td>
             <td>{{ empleado['position'] }}</td>
             <td>{{ empleado['dni'] }}</td>
             <td>{{ empleado['phone'] or '—' }}</td>

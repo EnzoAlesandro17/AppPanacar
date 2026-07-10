@@ -52,15 +52,15 @@
     <label>Ubicación (depósito/estante)
         <input type="text" name="location" value="{{ producto.location or '' if producto else '' }}">
     </label>
-    <label>Sucursales (una o varias, opcional)
-        <select name="branch_ids" multiple size="4">
-            {% for sucursal in sucursales %}
-            <option value="{{ sucursal['id'] }}" {{ 'selected' if sucursal['id'] in sucursales_seleccionadas else '' }}>
-                {{ sucursal['name'] }}
-            </option>
-            {% endfor %}
-        </select>
-    </label>
+    <fieldset class="checklist-sucursales">
+        <legend>Sucursales (una o varias, opcional)</legend>
+        {% for sucursal in sucursales %}
+        <label class="checklist-item">
+            <input type="checkbox" name="branch_ids" value="{{ sucursal['id'] }}" {{ 'checked' if sucursal['id'] in sucursales_seleccionadas else '' }}>
+            {{ sucursal['name'] }}
+        </label>
+        {% endfor %}
+    </fieldset>
     <label>Stock (vacío si no aplica)
         <input type="number" name="stock" min="0" step="1" value="{{ producto.stock if producto and producto.stock is not none else '' }}">
     </label>

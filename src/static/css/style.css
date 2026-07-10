@@ -483,6 +483,42 @@ body.login-page .form-card button[type="submit"] {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
 }
 
+.checklist-sucursales {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.checklist-sucursales legend {
+    padding: 0 4px;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.form-card .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: .95rem;
+    font-weight: 400;
+    color: var(--color-text);
+}
+
+.checklist-item:last-child {
+    margin-bottom: 0;
+}
+
+.form-card .checklist-item input[type="checkbox"] {
+    display: inline-block;
+    width: auto;
+    margin: 0;
+}
+
 .campo-password {
     display: flex;
     gap: 8px;
@@ -559,6 +595,37 @@ body.login-page .form-card button[type="submit"] {
     margin: 0 0 12px;
     color: var(--color-text-muted);
     font-size: .92rem;
+}
+
+.faq-ver-mas {
+    max-width: 720px;
+    margin: 0 auto 28px;
+    text-align: center;
+}
+
+.faq-ver-mas > summary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-weight: 600;
+    color: var(--color-primary);
+    cursor: pointer;
+    list-style: none;
+}
+
+.faq-ver-mas > summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-ver-mas > summary:hover {
+    background: var(--color-bg);
+    border-color: var(--color-primary);
+}
+
+.faq-ver-mas[open] > summary {
+    margin-bottom: 20px;
 }
 
 /* Pie de página */

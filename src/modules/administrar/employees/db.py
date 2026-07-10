@@ -22,10 +22,28 @@ def crear_tabla():
                 phone TEXT,
                 emergency_contact_name TEXT,
                 emergency_contact_phone TEXT,
+                sort_order INTEGER NOT NULL DEFAULT 0,
                 status INTEGER NOT NULL DEFAULT 1
             )
             """
         )
+
+        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        if "sort_order" not in columnas:
+            # Orden editable a mano (ver logic.py reordenar_*, drag&drop en el listado); arranca
+            # respetando el orden alfabético (apellido, nombre) que tenía la lista hasta ahora.
+            conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+            conexion.execute(
+                f"""
+                UPDATE {TABLA} SET sort_order = (
+                    SELECT COUNT(*) FROM {TABLA} AS otra
+                    WHERE otra.last_name < {TABLA}.last_name
+                       OR (otra.last_name = {TABLA}.last_name AND otra.name < {TABLA}.name)
+                       OR (otra.last_name = {TABLA}.last_name AND otra.name = {TABLA}.name
+                           AND otra.id < {TABLA}.id)
+                ) + 1
+                """
+            )
 
         conexion.execute(
             f"""

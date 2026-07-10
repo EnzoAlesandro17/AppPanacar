@@ -71,7 +71,7 @@ def _nombre_sesion(usuario):
     if usuario["employee_id"]:
         empleado = obtener_empleado_por_id(usuario["employee_id"])
         if empleado is not None:
-            return f"{empleado['name']} {empleado['last_name']}", _iniciales(empleado["name"], empleado["last_name"])
+            return f"{empleado['last_name']}, {empleado['name']}", _iniciales(empleado["name"], empleado["last_name"])
     return usuario["username"], _iniciales(usuario["username"])
 
 

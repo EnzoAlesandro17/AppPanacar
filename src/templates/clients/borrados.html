@@ -15,7 +15,7 @@
     <tbody>
         {% for cliente in clientes %}
         <tr>
-            <td>{{ cliente['name'] }} {{ cliente['last_name'] }}</td>
+            <td>{{ cliente['last_name'] }}, {{ cliente['name'] }}</td>
             <td>{{ cliente['dni_cuit'] }}</td>
             <td>{{ cliente['phone'] or '—' }}</td>
             <td>{{ cliente['email'] or '—' }}</td>

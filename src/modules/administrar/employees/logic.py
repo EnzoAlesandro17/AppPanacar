@@ -110,8 +110,8 @@ def crear_empleado(position, name, last_name, dni, birth_date=None, email=None, 
                 f"""
                 INSERT INTO {TABLA}
                     (position, name, last_name, dni, birth_date, email, phone,
-                     emergency_contact_name, emergency_contact_phone)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     emergency_contact_name, emergency_contact_phone, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM {TABLA}))
                 """,
                 (position, name, last_name, dni, birth_date, email, telefono_normalizado,
                  emergency_contact_name, contacto_telefono_normalizado),
@@ -139,7 +139,7 @@ def listar_empleados(incluir_borrados=False):
     """
     if not incluir_borrados:
         consulta += f" WHERE {TABLA}.status = 1"
-    consulta += f" GROUP BY {TABLA}.id ORDER BY {TABLA}.last_name, {TABLA}.name"
+    consulta += f" GROUP BY {TABLA}.id ORDER BY {TABLA}.sort_order"
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta).fetchall()
@@ -208,4 +208,14 @@ def reactivar_empleado(id_empleado):
     """Revierte un borrado lógico: vuelve a marcar status = 1."""
     with obtener_conexion() as conexion:
         conexion.execute(f"UPDATE {TABLA} SET status = 1 WHERE id = ?", (id_empleado,))
+        conexion.commit()
+
+
+def reordenar_empleados(orden_ids):
+    """Reasigna sort_order según el orden recibido (lista de ids), de arriba hacia abajo."""
+    with obtener_conexion() as conexion:
+        for posicion, id_empleado in enumerate(orden_ids, start=1):
+            conexion.execute(
+                f"UPDATE {TABLA} SET sort_order = ? WHERE id = ? AND status = 1", (posicion, id_empleado)
+            )
         conexion.commit()

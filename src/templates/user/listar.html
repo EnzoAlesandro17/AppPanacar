@@ -24,7 +24,7 @@
             <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
             <td>{{ usuario['username'] }}</td>
             <td>{{ usuario['role'] }}</td>
-            <td>{{ (usuario['employee_name'] ~ ' ' ~ usuario['employee_last_name']) if usuario['employee_name'] else '—' }}</td>
+            <td>{{ (usuario['employee_last_name'] ~ ', ' ~ usuario['employee_name']) if usuario['employee_name'] else '—' }}</td>
             <td>
                 <a href="{{ url_for('user.editar', id_usuario=usuario['id']) }}">Editar</a>
                 {% if usuario['id'] != session.get('user_id') %}

@@ -11,6 +11,7 @@
 <table>
     <thead>
         <tr>
+            <th></th>
             <th>Nombre</th>
             <th>Puesto</th>
             <th>DNI</th>
@@ -19,10 +20,11 @@
             <th></th>
         </tr>
     </thead>
-    <tbody>
+    <tbody data-reorder-url="{{ url_for('employees.reordenar') }}">
         {% for empleado in empleados %}
-        <tr>
-            <td>{{ empleado['name'] }} {{ empleado['last_name'] }}</td>
+        <tr data-id="{{ empleado['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
+            <td>{{ empleado['last_name'] }}, {{ empleado['name'] }}</td>
             <td>{{ empleado['position'] }}</td>
             <td>{{ empleado['dni'] }}</td>
             <td>{{ empleado['phone'] or '—' }}</td>
@@ -30,14 +32,14 @@
             <td>
                 <a href="{{ url_for('employees.editar', id_empleado=empleado['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('employees.borrar', id_empleado=empleado['id']) }}"
-                      onsubmit="return confirm('¿Borrar al empleado {{ empleado['name'] }} {{ empleado['last_name'] }}?');" style="display:inline">
+                      onsubmit="return confirm('¿Borrar al empleado {{ empleado['last_name'] }}, {{ empleado['name'] }}?');" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Borrar</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">No hay empleados cargados.</td></tr>
+        <tr><td colspan="7">No hay empleados cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

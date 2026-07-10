@@ -33,15 +33,15 @@
     <label>Número de motor
         <input type="text" name="engine_number" value="{{ vehiculo.engine_number or '' if vehiculo else '' }}">
     </label>
-    <label>Sucursales (una o varias, opcional)
-        <select name="branch_ids" multiple size="4">
-            {% for sucursal in sucursales %}
-            <option value="{{ sucursal['id'] }}" {{ 'selected' if sucursal['id'] in sucursales_seleccionadas else '' }}>
-                {{ sucursal['name'] }}
-            </option>
-            {% endfor %}
-        </select>
-    </label>
+    <fieldset class="checklist-sucursales">
+        <legend>Sucursales (una o varias, opcional)</legend>
+        {% for sucursal in sucursales %}
+        <label class="checklist-item">
+            <input type="checkbox" name="branch_ids" value="{{ sucursal['id'] }}" {{ 'checked' if sucursal['id'] in sucursales_seleccionadas else '' }}>
+            {{ sucursal['name'] }}
+        </label>
+        {% endfor %}
+    </fieldset>
     <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
 

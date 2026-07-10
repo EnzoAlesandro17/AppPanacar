@@ -16,7 +16,7 @@
         <tr>
             <td>{{ usuario['username'] }}</td>
             <td>{{ usuario['role'] }}</td>
-            <td>{{ (usuario['employee_name'] ~ ' ' ~ usuario['employee_last_name']) if usuario['employee_name'] else '—' }}</td>
+            <td>{{ (usuario['employee_last_name'] ~ ', ' ~ usuario['employee_name']) if usuario['employee_name'] else '—' }}</td>
             <td>
                 <form method="post" action="{{ url_for('user.reactivar', id_usuario=usuario['id']) }}" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

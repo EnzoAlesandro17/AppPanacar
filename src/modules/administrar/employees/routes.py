@@ -13,6 +13,7 @@ from src.modules.administrar.employees.logic import (
     obtener_por_id,
     obtener_sucursales_ids,
     reactivar_empleado,
+    reordenar_empleados,
 )
 from src.permissions import puede_ver_eliminados
 
@@ -168,3 +169,11 @@ def reactivar(id_empleado):
     reactivar_empleado(id_empleado)
     flash("Empleado reactivado.", "success")
     return redirect(url_for(destino))
+
+
+@employees_bp.route("/reordenar", methods=["POST"])
+@login_required
+def reordenar():
+    datos = request.get_json(silent=True) or {}
+    reordenar_empleados(datos.get("orden", []))
+    return "", 204
