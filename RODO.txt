@@ -1,5 +1,5 @@
-RODO - notas personales sobre AppPanacar
-=========================================
+RODO
+====
 Rodo comenzó como un error de tipeo de TO-DO Lists. Hoy, es parte esencial de
 mis proyectos. Si bien todos conocemos el clásico README, como humanos siempre
 necesitamos un espacio donde ser nosotros mismos y plasmar nuestras ideas. Rodo
@@ -10,16 +10,7 @@ QUÉ ES ESTE PROYECTO
 ---------------------
 AppPanacar es el sistema interno para un taller de chapería y pintura con dos
 sucursales. Uso real: 6 computadoras y 6 celulares, no necesariamente
-conectados al WiFi (hay que asumir que puede andar offline o con conexión
-intermitente entre sucursales).
-
-Este repo arrancó como copia de otro proyecto (AppEmar, un local de otro
-rubro) que ya traía una arquitectura modular con Tkinter de interfaz. Esa UI
-de escritorio no sirve para este proyecto: la idea es que el frontend final
-sea HTML (para que ande en compus y celulares por igual sin instalar nada
-nativo). Por eso se limpió todo lo que era Tkinter y quedó solo el backend
-(SQLite + lógica de negocio), a la espera de que se diseñe el frontend HTML
-y cómo se va a servir.
+conectados al WiFi (hay que asumir que puede andar offline o con datos móviles).
 
 
 DECISIONES QUE VALE LA PENA RECORDAR
@@ -47,9 +38,6 @@ Para el día a día, ver git log.
   cada página; blueprints/tablas/módulos por dentro se quedan en inglés (ej.
   "Stock" -> /stock pero el módulo sigue siendo products). Mantener este
   criterio en módulos nuevos.
-- Catálogos (marcas de vehículos, compañías de seguro) se cargan con
-  INSERT ... ON CONFLICT DO NOTHING al arrancar la app: idempotente, no
-  duplica en cada restart. Reusar el mismo patrón para futuros seeds.
 - Autogestión de cuenta (/usuarios/perfil): el backend nunca lee role ni
   branch_id del form de autogestión (función separada, ni siquiera los
   parsea) — no hay forma de subirse de rol editando la propia cuenta aunque
@@ -99,19 +87,12 @@ Para el día a día, ver git log.
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
-- Permisos más finos dentro de cada módulo (no solo el todo-o-nada de
-  Administración): ej. si algún día Asesor necesita ver algo de
-  Administración en modo solo lectura, o si BackOffice necesita quedar por
-  debajo de Admin en algún caso puntual dentro de esa sección.
-- Pantalla de "Links útiles" que muestre los botones ya cargados para
-  clickear (hoy /links-utiles es solo el gestor de alta/edición/orden).
+- Permisos más finos dentro de cada módulo.
 - Diseñar qué va adentro de "Contabilidad" y "Configuración" (todavía
-  placeholders vacíos). "Preguntas frecuentes" ya tiene contenido, ver
-  decisiones.
+  placeholders vacíos).
 - Decidir cómo se arma el frontend HTML y cómo habla con este backend
   (¿API local por sucursal? tiene que resolver el escenario sin WiFi).
   Todavía sin diseñar a propósito.
-- Repasar restos de "AppEmar" que vayan apareciendo.
 - Pensar el modo offline/multi-sucursal en serio: hoy es una sola DB
   SQLite local; con 2 sucursales y máquinas no siempre conectadas hay que
   decidir DB por sucursal + sincronización, o servidor central.
@@ -119,8 +100,6 @@ QUÉ SEGUIRÍA HACIENDO
   ya existe).
 - Migraciones de esquema reales (ALTER TABLE) como norma y no como
   excepción para columnas nuevas.
-- Un módulo de ventas/movimientos que relacione clients + products + users
-  + branches.
 
 
 FASE DE IMPLEMENTACIÓN (dejar de vivir solo en localhost)
@@ -217,13 +196,7 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
 ---------------------------------------------------------------------
 - Sucursales acotadas: cada usuario pertenece a una sola sucursal y responde
   en nombre de ella.
-- Transferencias entre sucursales (efectivo o producto) sin poder modificar
-  la otra sucursal directamente — surge del futuro módulo de ventas/
-  movimientos.
-- Mensajería entre sucursales tipo "archivos cifrados" para pedidos de
-  actualización, conciliaciones o aprobaciones con descuento.
-- Posible 2FA (TOTP con pyotp) para el login de Admin/BackOffice más
-  adelante.
+- 2FA (TOTP con pyotp) para el login.
 - Módulo de siniestros: ya tiene tile y una página placeholder
   (/siniestros). Es la entidad real que une cliente + vehículo +
   aseguradora (no un dato suelto de cada uno por separado). Un mismo
@@ -240,9 +213,6 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
       insurance_companies/claim_statuses, falta el módulo que los consuma).
     - El resto de los datos del siniestro (fecha, descripción, etc.)
       todavía sin definir.
-- vehicles todavía sin dueño/cliente a propósito (ver decisiones); falta
-  decidir esa relación cuando se diseñe el módulo de siniestros, para que
-  este pueda referenciar "el Hilux de tal cliente" sin repetir datos.
 
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)
@@ -252,4 +222,4 @@ COSAS BUENAS (de la base heredada, vale la pena no perderlas)
   siendo cierto ahora que no hay UI.
 - Validaciones compartidas centralizadas en vez de duplicadas por módulo.
 - Casos borde reales del negocio pensados antes de convertirse en bugs
-  (E-SIM sin stock, DNI vs CUIT, precio mayorista/minorista).
+  (DNI vs CUIT, precio mayorista/minorista).
