@@ -19,7 +19,7 @@ def _validar_datos(name, email, phone):
 
 def _traducir_error_integridad(error):
     mensaje = str(error)
-    if "code" in mensaje:
+    if f"{TABLA}.code" in mensaje:
         return ValidationError("Ya existe una sucursal con ese code.")
     return ValidationError("Ya existe una sucursal con alguno de esos datos únicos.")
 

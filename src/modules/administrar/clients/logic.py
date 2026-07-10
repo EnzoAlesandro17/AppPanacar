@@ -27,7 +27,7 @@ def _validar_datos(name, last_name, dni_cuit, phone, email):
 
 def _traducir_error_integridad(error):
     mensaje = str(error)
-    if "dni_cuit" in mensaje:
+    if f"{TABLA}.dni_cuit" in mensaje:
         return ValidationError("Ya existe un cliente con ese DNI/CUIT.")
     return ValidationError("Ya existe un cliente con alguno de esos datos únicos.")
 

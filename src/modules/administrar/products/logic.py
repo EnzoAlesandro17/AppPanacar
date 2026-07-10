@@ -88,7 +88,7 @@ def _validar_datos(code, name, category, brand, description, stock, wholesale_pr
 
 def _traducir_error_integridad(error):
     mensaje = str(error)
-    if "code" in mensaje:
+    if f"{TABLA}.code" in mensaje:
         return ValidationError("Ya existe un producto con ese code.")
     return ValidationError("Ya existe un producto con alguno de esos datos únicos.")
 

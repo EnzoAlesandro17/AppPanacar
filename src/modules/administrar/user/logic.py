@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import os
 import sqlite3
 from datetime import datetime, timedelta
@@ -26,7 +27,7 @@ def _verificar_hash(contrasena, contrasena_guardada):
     salt_hex, hash_hex = contrasena_guardada.split("$")
     salt = bytes.fromhex(salt_hex)
     hash_bytes = hashlib.pbkdf2_hmac("sha256", contrasena.encode(), salt, _ITERACIONES_HASH)
-    return hash_bytes.hex() == hash_hex
+    return hmac.compare_digest(hash_bytes.hex(), hash_hex)
 
 
 def _validar_employee_id(employee_id):
