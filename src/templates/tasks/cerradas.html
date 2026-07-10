@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tareas cerradas</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('tasks.listar') }}">Ver abiertas</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Título</th>
+            <th>Creada por</th>
+            <th>Asignada a</th>
+            <th>Sucursales</th>
+            <th>Cerrada</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tarea in tareas %}
+        <tr>
+            <td><a href="{{ url_for('tasks.detalle', id_tarea=tarea['id']) }}">{{ tarea['title'] }}</a></td>
+            <td>{{ tarea['created_by_username'] }}</td>
+            <td>{{ tarea['assignee_names'] or '—' }}</td>
+            <td>{{ tarea['branch_names'] or '—' }}</td>
+            <td>{{ tarea['closed_at'][:16] | replace('T', ' ') if tarea['closed_at'] else '—' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('tasks.reabrir', id_tarea=tarea['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reabrir</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No hay tareas cerradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

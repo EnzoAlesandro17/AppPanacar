@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Bitácora</h1>
+<p class="faq-intro">Últimos {{ eventos|length }} eventos (logueos, altas, ediciones, borrados, reactivaciones e
+    intentos sin permiso), más reciente primero. Un evento sin usuario es un intento de login fallido.</p>
+<div class="table-scroll">
+<table>
+    <thead>
+        <tr>
+            <th>Fecha y hora</th>
+            <th>Usuario</th>
+            <th>IP</th>
+            <th>Acción</th>
+            <th>Detalle</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for evento in eventos %}
+        <tr>
+            <td>{{ evento['created_at'][:19] | replace('T', ' ') }}</td>
+            <td>{{ evento['username'] or '—' }}</td>
+            <td>{{ evento['ip_address'] or '—' }}</td>
+            <td>{{ evento['method'] }} {{ evento['path'] }}</td>
+            <td class="{{ 'bitacora-evento-error' if evento['category'] == 'error' else '' }}">
+                {{ evento['message'] or '—' }}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Todavía no hay eventos registrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

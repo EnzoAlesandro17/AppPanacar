@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ tarea['title'] }}</h1>
+<div class="form-card">
+    <p>{{ tarea['description'] or 'Sin descripción.' }}</p>
+    <p><small>Creada por {{ tarea['created_by_username'] }} el {{ tarea['created_at'][:16] | replace('T', ' ') }}</small></p>
+    {% if sucursales_nombres %}<p><small>Sucursales: {{ sucursales_nombres }}</small></p>{% endif %}
+    {% if asignados_nombres %}<p><small>Asignada a: {{ asignados_nombres }}</small></p>{% endif %}
+
+    {% if tarea['closed_at'] %}
+    <p class="flash flash-success">Cerrada el {{ tarea['closed_at'][:16] | replace('T', ' ') }}</p>
+    <form method="post" action="{{ url_for('tasks.reabrir', id_tarea=tarea['id']) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secondary">Reabrir</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('tasks.cerrar', id_tarea=tarea['id']) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Cerrar tarea</button>
+    </form>
+    {% endif %}
+</div>
+
+<h2>Comentarios</h2>
+<div class="form-card">
+    {% for comentario in comentarios %}
+    <p>
+        <strong>{{ comentario['username'] }}</strong>
+        <small>{{ comentario['created_at'][:16] | replace('T', ' ') }}</small><br>
+        {{ comentario['message'] }}
+    </p>
+    {% else %}
+    <p>Todavía no hay comentarios.</p>
+    {% endfor %}
+
+    <form method="post" action="{{ url_for('tasks.comentar', id_tarea=tarea['id']) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Agregar comentario
+            <textarea name="message" required></textarea>
+        </label>
+        <button type="submit" class="btn btn-primary">Comentar</button>
+    </form>
+</div>
+{% endblock %}

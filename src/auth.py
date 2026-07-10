@@ -10,7 +10,7 @@ from functools import wraps
 
 from flask import flash, redirect, session, url_for
 
-from src.permissions import puede_acceder_administracion, puede_ver_eliminados
+from src.permissions import puede_acceder_administracion, puede_ver_bitacora, puede_ver_eliminados
 
 
 def login_required(vista):
@@ -40,6 +40,20 @@ def requiere_ver_eliminados(vista):
     def wrapper(*args, **kwargs):
         if not puede_ver_eliminados(session.get("role")):
             flash("No tenés permiso para ver eliminados.", "error")
+            return redirect(url_for("administrar.index"))
+        return vista(*args, **kwargs)
+
+    return wrapper
+
+
+def requiere_ver_bitacora(vista):
+    """Para usar en la vista de Bitácora: solo IT puede ver el registro de
+    actividad (logueos, ediciones, etc. de todo el equipo)."""
+
+    @wraps(vista)
+    def wrapper(*args, **kwargs):
+        if not puede_ver_bitacora(session.get("role")):
+            flash("No tenés permiso para ver la bitácora.", "error")
             return redirect(url_for("administrar.index"))
         return vista(*args, **kwargs)
 

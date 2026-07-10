@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tareas</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('tasks.nueva') }}">+ Nueva tarea</a>
+    <a class="btn btn-secondary" href="{{ url_for('tasks.cerradas') }}">Ver cerradas</a>
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Título</th>
+            <th>Creada por</th>
+            <th>Asignada a</th>
+            <th>Sucursales</th>
+            <th>Última actividad</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tarea in tareas %}
+        <tr>
+            <td><a href="{{ url_for('tasks.detalle', id_tarea=tarea['id']) }}">{{ tarea['title'] }}</a></td>
+            <td>{{ tarea['created_by_username'] }}</td>
+            <td>{{ tarea['assignee_names'] or '—' }}</td>
+            <td>{{ tarea['branch_names'] or '—' }}</td>
+            <td>{{ tarea['updated_at'][:16] | replace('T', ' ') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No hay tareas abiertas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

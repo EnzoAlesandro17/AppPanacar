@@ -13,6 +13,9 @@
         <div class="barra-inner">
             <span class="marca">{{ app_name }}</span>
             <div class="usuario-actual">
+                <a class="tareas-link" href="{{ url_for('tasks.listar') }}">Tareas
+                    {% if tareas_sin_ver %}<span class="badge-tareas">{{ tareas_sin_ver }}</span>{% endif %}
+                </a>
                 <button type="button" class="usuario-boton" id="usuario-boton" aria-haspopup="true" aria-expanded="false"
                         title="{{ session['name'] }} ({{ session['role'] }})">
                     <span class="avatar">{{ session['iniciales'] }}</span>

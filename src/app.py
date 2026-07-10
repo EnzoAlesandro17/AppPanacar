@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from flask import Flask
+from flask import Flask, request, session
 from flask_wtf import CSRFProtect
 
 from src.cli import registrar_comandos
@@ -8,6 +8,9 @@ from src.config import SECRET_KEY
 from src.constants.settings import Settings
 from src.constants.validations import formatear_fecha_visual
 from src.modules.administrar.administracion.routes import administracion_bp
+from src.modules.administrar.bitacora.db import crear_tabla as crear_tabla_bitacora
+from src.modules.administrar.bitacora.logic import registrar_evento
+from src.modules.administrar.bitacora.routes import bitacora_bp
 from src.modules.administrar.branches.db import crear_tabla as crear_tabla_branches
 from src.modules.administrar.branches.routes import branches_bp
 from src.modules.administrar.clients.db import crear_tabla as crear_tabla_clients
@@ -24,6 +27,9 @@ from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
 from src.modules.administrar.routes import administrar_bp
 from src.modules.administrar.siniestros.routes import siniestros_bp
+from src.modules.administrar.tasks.db import crear_tabla as crear_tabla_tasks
+from src.modules.administrar.tasks.logic import contar_no_vistas
+from src.modules.administrar.tasks.routes import tasks_bp
 from src.modules.administrar.user.db import crear_tabla as crear_tabla_users
 from src.modules.administrar.user.routes import user_bp
 from src.modules.administrar.validaciones.claim_statuses.db import crear_tabla as crear_tabla_claim_statuses
@@ -55,6 +61,8 @@ def _inicializar_tablas():
     crear_tabla_employees()
     crear_tabla_users()
     crear_tabla_useful_links()
+    crear_tabla_bitacora()
+    crear_tabla_tasks()
 
 
 def create_app():
@@ -74,13 +82,43 @@ def create_app():
     def inyectar_app_name():
         return {"app_name": Settings.APP_NAME, "app_version": Settings.VERSION}
 
+    @app.context_processor
+    def inyectar_contador_tareas():
+        if "user_id" not in session:
+            return {}
+        return {"tareas_sin_ver": contar_no_vistas(session["user_id"], session.get("branch_ids"))}
+
     app.jinja_env.filters["fecha_visual"] = formatear_fecha_visual
+
+    _ENDPOINTS_SIN_BITACORA = {"user.login", "user.logout"}
+
+    @app.after_request
+    def _registrar_en_bitacora(response):
+        """Bitácora liviana: si el request deja un flash sin consumir (recién
+        seteado, antes de que la próxima página lo muestre y lo vacíe) y hay
+        sesión iniciada, lo graba. login/logout se loguean aparte en sus
+        propias vistas porque un login exitoso no flashea nada."""
+        if "user_id" in session and request.endpoint not in _ENDPOINTS_SIN_BITACORA:
+            flashes = session.get("_flashes")
+            if flashes:
+                categoria, mensaje = flashes[-1]
+                registrar_evento(
+                    user_id=session.get("user_id"),
+                    username=session.get("username"),
+                    ip_address=request.remote_addr,
+                    method=request.method,
+                    path=request.path,
+                    category=categoria,
+                    message=mensaje,
+                )
+        return response
 
     _inicializar_tablas()
     registrar_comandos(app)
 
     app.register_blueprint(administrar_bp)
     app.register_blueprint(administracion_bp)
+    app.register_blueprint(bitacora_bp)
     app.register_blueprint(branches_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(products_bp)
@@ -96,5 +134,6 @@ def create_app():
     app.register_blueprint(informacion_util_bp)
     app.register_blueprint(employees_bp)
     app.register_blueprint(preguntas_frecuentes_bp)
+    app.register_blueprint(tasks_bp)
 
     return app

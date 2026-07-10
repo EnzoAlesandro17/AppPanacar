@@ -5,6 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from src.auth import login_required, requiere_ver_eliminados
 from src.breadcrumbs import migas
 from src.exceptions import RegistroBorradoExistente, ValidationError
+from src.modules.administrar.bitacora.logic import registrar_evento
 from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.employees.logic import listar_empleados
 from src.modules.administrar.employees.logic import obtener_por_id as obtener_empleado_por_id
@@ -85,17 +86,26 @@ def login():
         try:
             usuario = iniciar_sesion(username, password)
         except ValidationError as error:
+            registrar_evento(
+                user_id=None, username=username, ip_address=request.remote_addr,
+                method="POST", path=request.path, category="error", message=str(error),
+            )
             flash(str(error), "error")
             return redirect(url_for("user.login"))
 
         nombre, iniciales = _nombre_sesion(usuario)
         session.permanent = True
         session["user_id"] = usuario["id"]
+        session["username"] = usuario["username"]
         session["name"] = nombre
         session["iniciales"] = iniciales
         session["role"] = usuario["role"]
         session["branch_ids"] = obtener_sucursales_ids_usuario(usuario["id"])
         session["login_date"] = date.today().isoformat()
+        registrar_evento(
+            user_id=usuario["id"], username=usuario["username"], ip_address=request.remote_addr,
+            method="POST", path=request.path, category="success", message="Inicio de sesión.",
+        )
         return redirect(url_for("administrar.index"))
 
     return render_template("user/login.html")
@@ -103,6 +113,12 @@ def login():
 
 @user_bp.route("/logout")
 def logout():
+    if "user_id" in session:
+        registrar_evento(
+            user_id=session.get("user_id"), username=session.get("username"),
+            ip_address=request.remote_addr, method="GET", path=request.path,
+            category="success", message="Cierre de sesión.",
+        )
     session.clear()
     return redirect(url_for("user.login"))
 
@@ -294,6 +310,7 @@ def perfil():
 
         usuario_actualizado = obtener_por_id(session["user_id"])
         nombre, iniciales = _nombre_sesion(usuario_actualizado)
+        session["username"] = usuario_actualizado["username"]
         session["name"] = nombre
         session["iniciales"] = iniciales
         flash("Tus datos se actualizaron.", "success")

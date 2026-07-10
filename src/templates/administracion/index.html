@@ -9,5 +9,8 @@
     <a class="tile" href="{{ url_for('validaciones.index') }}">Validaciones</a>
     <a class="tile" href="{{ url_for('contabilidad.index') }}">Contabilidad</a>
     <a class="tile" href="{{ url_for('preguntas_frecuentes.index') }}">Preguntas frecuentes</a>
+    {% if puede_bitacora %}
+    <a class="tile" href="{{ url_for('bitacora.index') }}">Bitácora</a>
+    {% endif %}
 </div>
 {% endblock %}

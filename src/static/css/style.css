@@ -72,6 +72,30 @@ header.barra a:hover {
 
 .usuario-actual {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tareas-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-tareas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-danger);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .usuario-boton {
@@ -550,6 +574,12 @@ body.login-page .form-card button[type="submit"] {
 
 .icono-ojo {
     flex-shrink: 0;
+}
+
+/* Bitácora */
+
+.bitacora-evento-error {
+    color: var(--color-danger);
 }
 
 /* Preguntas frecuentes */

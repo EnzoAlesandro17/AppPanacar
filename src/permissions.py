@@ -35,3 +35,8 @@ def puede_cambiar_password(actor_role, target_role, es_uno_mismo):
 def puede_ver_eliminados(role):
     """Solo IT puede ver listas de registros eliminados, en cualquier módulo."""
     return role == "IT"
+
+
+def puede_ver_bitacora(role):
+    """Solo IT puede ver el registro de actividad (logueos, ediciones, etc.)."""
+    return role == "IT"
