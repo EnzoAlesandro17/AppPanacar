@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ 'Editar siniestro' if accion == 'editar' else 'Nuevo siniestro' }}</h1>
+<p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <fieldset class="alta-inline">
+        <legend>Cliente <span class="obligatorio">*</span></legend>
+        <input type="radio" class="modo-radio" id="cliente-modo-existente" name="modo_cliente" value="existente"
+               {{ 'checked' if not (siniestro and siniestro.modo_cliente == 'nuevo') else '' }}>
+        <label class="modo-etiqueta" for="cliente-modo-existente">Cliente existente</label>
+        <input type="radio" class="modo-radio" id="cliente-modo-nuevo" name="modo_cliente" value="nuevo"
+               {{ 'checked' if siniestro and siniestro.modo_cliente == 'nuevo' else '' }}>
+        <label class="modo-etiqueta" for="cliente-modo-nuevo">Cargar cliente nuevo</label>
+
+        <div class="bloque-existente">
+            <label>Cliente
+                <select name="client_id">
+                    <option value="">— Elegir —</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente['id'] }}" {{ 'selected' if siniestro and siniestro.client_id|string == cliente['id']|string else '' }}>
+                        {{ cliente['last_name'] }}, {{ cliente['name'] }} ({{ cliente['dni_cuit'] }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <div class="bloque-nuevo">
+            <label>Nombre
+                <input type="text" name="cliente_name" value="{{ siniestro.cliente_name or '' if siniestro else '' }}">
+            </label>
+            <label>Apellido
+                <input type="text" name="cliente_last_name" value="{{ siniestro.cliente_last_name or '' if siniestro else '' }}">
+            </label>
+            <label>DNI/CUIT
+                <input type="text" name="cliente_dni_cuit" value="{{ siniestro.cliente_dni_cuit or '' if siniestro else '' }}">
+            </label>
+            <label>Teléfono
+                <input type="text" name="cliente_phone" value="{{ siniestro.cliente_phone or '' if siniestro else '' }}">
+            </label>
+            <label>Email
+                <input type="email" name="cliente_email" value="{{ siniestro.cliente_email or '' if siniestro else '' }}">
+            </label>
+        </div>
+    </fieldset>
+
+    <fieldset class="alta-inline">
+        <legend>Vehículo <span class="obligatorio">*</span></legend>
+        <input type="radio" class="modo-radio" id="vehiculo-modo-existente" name="modo_vehiculo" value="existente"
+               {{ 'checked' if not (siniestro and siniestro.modo_vehiculo == 'nuevo') else '' }}>
+        <label class="modo-etiqueta" for="vehiculo-modo-existente">Vehículo existente</label>
+        <input type="radio" class="modo-radio" id="vehiculo-modo-nuevo" name="modo_vehiculo" value="nuevo"
+               {{ 'checked' if siniestro and siniestro.modo_vehiculo == 'nuevo' else '' }}>
+        <label class="modo-etiqueta" for="vehiculo-modo-nuevo">Cargar vehículo nuevo</label>
+
+        <div class="bloque-existente">
+            <label>Vehículo
+                <select name="vehicle_id">
+                    <option value="">— Elegir —</option>
+                    {% for vehiculo in vehiculos %}
+                    <option value="{{ vehiculo['id'] }}" {{ 'selected' if siniestro and siniestro.vehicle_id|string == vehiculo['id']|string else '' }}>
+                        {{ vehiculo['brand_name'] }} {{ vehiculo['model'] }} ({{ vehiculo['license_plate'] }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <div class="bloque-nuevo">
+            <label>Marca
+                <select name="vehiculo_brand_id">
+                    <option value="">— Elegir —</option>
+                    {% for marca in marcas %}
+                    <option value="{{ marca['id'] }}" {{ 'selected' if siniestro and siniestro.vehiculo_brand_id|string == marca['id']|string else '' }}>
+                        {{ marca['name'] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Modelo
+                <input type="text" name="vehiculo_model" value="{{ siniestro.vehiculo_model or '' if siniestro else '' }}">
+            </label>
+            <label>Año
+                <input type="number" name="vehiculo_year" min="1900" step="1" value="{{ siniestro.vehiculo_year or '' if siniestro else '' }}">
+            </label>
+            <label>Dominio
+                <input type="text" name="vehiculo_license_plate" value="{{ siniestro.vehiculo_license_plate or '' if siniestro else '' }}">
+            </label>
+            <label>Color
+                <input type="text" name="vehiculo_color" value="{{ siniestro.vehiculo_color or '' if siniestro else '' }}">
+            </label>
+            <label>Número de chasis
+                <input type="text" name="vehiculo_chassis_number" value="{{ siniestro.vehiculo_chassis_number or '' if siniestro else '' }}">
+            </label>
+            <label>Número de motor
+                <input type="text" name="vehiculo_engine_number" value="{{ siniestro.vehiculo_engine_number or '' if siniestro else '' }}">
+            </label>
+        </div>
+    </fieldset>
+
+    <label>Compañía de seguro
+        <select name="insurance_company_id">
+            <option value="">— Sin aseguradora —</option>
+            {% for aseguradora in aseguradoras %}
+            <option value="{{ aseguradora['id'] }}" {{ 'selected' if siniestro and siniestro.insurance_company_id|string == aseguradora['id']|string else '' }}>
+                {{ aseguradora['name'] }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Estado <span class="obligatorio">*</span>
+        <select name="claim_status_id" required>
+            <option value="">— Elegir —</option>
+            {% for estado in estados %}
+            <option value="{{ estado['id'] }}" {{ 'selected' if siniestro and siniestro.claim_status_id|string == estado['id']|string else '' }}>
+                {{ estado['name'] }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Sucursal <span class="obligatorio">*</span>
+        <select name="branch_id" required>
+            <option value="">— Elegir —</option>
+            {% for sucursal in sucursales %}
+            <option value="{{ sucursal['id'] }}" {{ 'selected' if siniestro and siniestro.branch_id|string == sucursal['id']|string else '' }}>
+                {{ sucursal['name'] }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Fecha de apertura <span class="obligatorio">*</span>
+        <input type="text" name="opened_date" placeholder="dd/mm/aaaa" pattern="\d{2}/\d{2}/\d{4}" required
+               value="{{ siniestro.opened_date | fecha_visual if siniestro else '' }}">
+    </label>
+    <label>Descripción
+        <textarea name="description">{{ siniestro.description or '' if siniestro else '' }}</textarea>
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+
+{% if accion == 'editar' %}
+<h1>Historial de estados</h1>
+<div class="table-scroll">
+<table>
+    <thead>
+        <tr>
+            <th>Fecha</th>
+            <th>Estado anterior</th>
+            <th>Estado nuevo</th>
+            <th>Usuario</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for paso in historial %}
+        <tr>
+            <td>{{ paso['changed_at'][:16].replace('T', ' ') }}</td>
+            <td>{{ paso['previous_status_name'] or '— (apertura) —' }}</td>
+            <td>{{ paso['new_status_name'] }}</td>
+            <td>{{ paso['changed_by_username'] or '—' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

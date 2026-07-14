@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Siniestros borrados</h1>
+<div class="table-scroll">
+<table>
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Vehículo</th>
+            <th>Estado</th>
+            <th>Sucursal</th>
+            <th>Fecha apertura</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for siniestro in siniestros %}
+        <tr>
+            <td>{{ siniestro['client_last_name'] }}, {{ siniestro['client_name'] }}</td>
+            <td>{{ siniestro['vehicle_model'] }} ({{ siniestro['vehicle_license_plate'] }})</td>
+            <td>{{ siniestro['claim_status_name'] }}</td>
+            <td>{{ siniestro['branch_name'] }}</td>
+            <td>{{ siniestro['opened_date'] | fecha_visual }}</td>
+            <td>
+                <form method="post" action="{{ url_for('siniestros.reactivar', id_siniestro=siniestro['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No hay siniestros borrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

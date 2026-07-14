@@ -26,6 +26,7 @@ from src.modules.administrar.products.db import crear_tabla as crear_tabla_produ
 from src.modules.administrar.products.db import crear_tabla_compatibilidad
 from src.modules.administrar.products.routes import products_bp
 from src.modules.administrar.routes import administrar_bp
+from src.modules.administrar.siniestros.db import crear_tabla as crear_tabla_siniestros
 from src.modules.administrar.siniestros.routes import siniestros_bp
 from src.modules.administrar.tasks.db import crear_tabla as crear_tabla_tasks
 from src.modules.administrar.tasks.logic import contar_no_vistas
@@ -60,6 +61,7 @@ def _inicializar_tablas():
     crear_tabla_vehicles()
     crear_tabla_employees()
     crear_tabla_users()
+    crear_tabla_siniestros()
     crear_tabla_useful_links()
     crear_tabla_bitacora()
     crear_tabla_tasks()

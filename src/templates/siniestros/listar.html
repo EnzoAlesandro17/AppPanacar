@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Siniestros</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('siniestros.nuevo') }}">+ Nuevo siniestro</a>
+    {% if session.get('role') == 'IT' %}
+    <a class="btn btn-secondary" href="{{ url_for('siniestros.borrados') }}">Ver borrados</a>
+    {% endif %}
+</p>
+<div class="table-scroll">
+<table>
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Vehículo</th>
+            <th>Aseguradora</th>
+            <th>Estado</th>
+            <th>Sucursal</th>
+            <th>Fecha apertura</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for siniestro in siniestros %}
+        <tr>
+            <td>{{ siniestro['client_last_name'] }}, {{ siniestro['client_name'] }}</td>
+            <td>{{ siniestro['vehicle_model'] }} ({{ siniestro['vehicle_license_plate'] }})</td>
+            <td>{{ siniestro['insurance_company_name'] or '—' }}</td>
+            <td>{{ siniestro['claim_status_name'] }}</td>
+            <td>{{ siniestro['branch_name'] }}</td>
+            <td>{{ siniestro['opened_date'] | fecha_visual }}</td>
+            <td>
+                <a href="{{ url_for('siniestros.editar', id_siniestro=siniestro['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('siniestros.borrar', id_siniestro=siniestro['id']) }}"
+                      onsubmit="return confirm('¿Borrar este siniestro?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No hay siniestros cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

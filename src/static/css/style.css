@@ -576,6 +576,65 @@ body.login-page .form-card button[type="submit"] {
     flex-shrink: 0;
 }
 
+/* Alta inline (Siniestros: cliente/vehículo existente o nuevo, sin JS) */
+
+.alta-inline {
+    margin: 0 0 14px;
+    padding: 14px 14px 2px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.alta-inline legend {
+    padding: 0 4px;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.alta-inline .modo-radio {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.alta-inline .modo-etiqueta {
+    display: inline-block;
+    margin: 0 8px 14px 0;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.alta-inline .modo-radio:checked + .modo-etiqueta {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+.alta-inline .modo-radio:focus-visible + .modo-etiqueta {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.alta-inline .bloque-nuevo {
+    display: none;
+}
+
+.alta-inline input[value="nuevo"]:checked ~ .bloque-nuevo {
+    display: block;
+}
+
+.alta-inline input[value="nuevo"]:checked ~ .bloque-existente {
+    display: none;
+}
+
 /* Bitácora */
 
 .bitacora-evento-error {
