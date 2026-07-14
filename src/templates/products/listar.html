@@ -12,7 +12,7 @@
 <table>
     <thead>
         <tr>
-            <th>Código</th>
+            <th>Código interno</th>
             <th>Nombre</th>
             <th>Tipo</th>
             <th>OEM</th>
@@ -20,7 +20,6 @@
             <th>Stock</th>
             <th>Ubicación</th>
             <th>Sucursales</th>
-            <th>Precio minorista</th>
             <th></th>
         </tr>
     </thead>
@@ -35,7 +34,6 @@
             <td>{{ producto['stock'] if producto['stock'] is not none else '—' }}</td>
             <td>{{ producto['location'] or '—' }}</td>
             <td>{{ producto['branch_names'] or '—' }}</td>
-            <td>{{ producto['retail_price'] }}</td>
             <td>
                 <a href="{{ url_for('products.editar', id_producto=producto['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('products.borrar', id_producto=producto['id']) }}"

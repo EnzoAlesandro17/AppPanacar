@@ -6,12 +6,11 @@
 <table>
     <thead>
         <tr>
-            <th>Código</th>
+            <th>Código interno</th>
             <th>Nombre</th>
             <th>Tipo</th>
             <th>OEM</th>
             <th>Stock</th>
-            <th>Precio minorista</th>
             <th></th>
         </tr>
     </thead>
@@ -23,7 +22,6 @@
             <td>{{ producto['product_type'] }}</td>
             <td>{{ producto['oem_code'] or '—' }}</td>
             <td>{{ producto['stock'] if producto['stock'] is not none else '—' }}</td>
-            <td>{{ producto['retail_price'] }}</td>
             <td>
                 <form method="post" action="{{ url_for('products.reactivar', id_producto=producto['id']) }}" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

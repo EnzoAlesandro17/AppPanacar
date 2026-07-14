@@ -72,8 +72,6 @@ def _datos_del_form():
         "brand": request.form.get("brand", "").strip(),
         "description": request.form.get("description", "").strip(),
         "stock": _parsear_numero(request.form.get("stock", ""), "stock", int),
-        "wholesale_price": _parsear_numero(request.form.get("wholesale_price", ""), "wholesale_price", float),
-        "retail_price": _parsear_numero(request.form.get("retail_price", ""), "retail_price", float),
         "product_type": request.form.get("product_type", "").strip(),
         "oem_code": request.form.get("oem_code", "").strip() or None,
         "side": request.form.get("side", "").strip() or None,

@@ -13,7 +13,7 @@ from tests.conftest import extraer_csrf
 def _producto(code, name, **overrides):
     datos = dict(
         code=code, name=name, category="Categoria", brand="MarcaX", description="Descripcion",
-        stock=10, wholesale_price=100.0, retail_price=150.0,
+        stock=10,
     )
     datos.update(overrides)
     return crear_producto(**datos)

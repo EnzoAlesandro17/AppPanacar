@@ -109,14 +109,14 @@ def test_crear_sucursal_con_code_de_una_borrada_levanta_registro_borrado_existen
 def test_crear_producto_con_code_de_uno_borrado_levanta_registro_borrado_existente(app):
     id_original = crear_producto(
         code="PROD1", name="Producto Original", category="Cat", brand="Marca",
-        description="Desc", stock=5, wholesale_price=10.0, retail_price=15.0,
+        description="Desc", stock=5,
     )
     borrar_producto(id_original)
 
     with pytest.raises(RegistroBorradoExistente) as excinfo:
         crear_producto(
             code="PROD1", name="Producto Nuevo", category="Cat", brand="Marca",
-            description="Desc", stock=5, wholesale_price=10.0, retail_price=15.0,
+            description="Desc", stock=5,
         )
     assert excinfo.value.id_existente == id_original
 

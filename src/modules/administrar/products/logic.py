@@ -34,19 +34,6 @@ def _validar_stock(stock):
         raise ValidationError("stock debe ser un número entero mayor o igual a 0, o None si no aplica.")
 
 
-def _validar_precios(wholesale_price, retail_price):
-    for etiqueta, valor in (("wholesale_price", wholesale_price), ("retail_price", retail_price)):
-        if valor is None:
-            raise ValidationError(f"Falta {etiqueta}")
-        if not isinstance(valor, (int, float)) or isinstance(valor, bool) or valor < 0:
-            raise ValidationError(f"{etiqueta} debe ser un número mayor o igual a 0.")
-
-    if retail_price < wholesale_price:
-        raise ValidationError(
-            "retail_price no puede ser menor a wholesale_price."
-        )
-
-
 def _validar_precio_compra(purchase_price):
     if purchase_price is None:
         return
@@ -69,7 +56,7 @@ def _validar_side(side):
         raise ValidationError(f"side debe ser una de: {', '.join(SIDES)}.")
 
 
-def _validar_datos(code, name, category, brand, description, stock, wholesale_price, retail_price,
+def _validar_datos(code, name, category, brand, description, stock,
                     product_type, oem_code, side, condition, supplier, location,
                     purchase_date, purchase_price):
     validar_campos_obligatorios({
@@ -80,7 +67,6 @@ def _validar_datos(code, name, category, brand, description, stock, wholesale_pr
         "description": description,
     })
     _validar_stock(stock)
-    _validar_precios(wholesale_price, retail_price)
     _validar_precio_compra(purchase_price)
     _validar_product_type(product_type)
     _validar_condition(condition)
@@ -143,7 +129,7 @@ def _buscar_borrado_por_code(conexion, code):
     return conexion.execute(f"SELECT id FROM {TABLA} WHERE code = ? AND status = 0", (code,)).fetchone()
 
 
-def crear_producto(code, name, category, brand, description, stock, wholesale_price, retail_price,
+def crear_producto(code, name, category, brand, description, stock,
                     product_type="Autoparte", oem_code=None, side=None, condition=None,
                     supplier=None, location=None, purchase_date=None, purchase_price=None,
                     branch_ids=None):
@@ -153,7 +139,7 @@ def crear_producto(code, name, category, brand, description, stock, wholesale_pr
     levanta RegistroBorradoExistente para que la vista ofrezca reactivar el
     que ya estaba en vez de chocar con el UNIQUE."""
     _validar_datos(
-        code, name, category, brand, description, stock, wholesale_price, retail_price,
+        code, name, category, brand, description, stock,
         product_type, oem_code, side, condition, supplier, location, purchase_date, purchase_price,
     )
 
@@ -166,12 +152,12 @@ def crear_producto(code, name, category, brand, description, stock, wholesale_pr
             cursor = conexion.execute(
                 f"""
                 INSERT INTO {TABLA}
-                    (code, name, category, brand, description, stock, wholesale_price, retail_price,
+                    (code, name, category, brand, description, stock,
                      product_type, oem_code, side, condition, supplier, location,
                      purchase_date, purchase_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (code, name, category, brand, description, stock, wholesale_price, retail_price,
+                (code, name, category, brand, description, stock,
                  product_type, oem_code, side, condition, supplier, location,
                  purchase_date, purchase_price),
             )
@@ -247,7 +233,7 @@ def buscar_por_nombre(texto):
 
 
 def actualizar_producto(id_producto, code=None, name=None, category=None, brand=None,
-                         description=None, stock=None, wholesale_price=None, retail_price=None,
+                         description=None, stock=None,
                          product_type=None, oem_code=None, side=None, condition=None,
                          supplier=None, location=None, purchase_date=None, purchase_price=None,
                          branch_ids=None):
@@ -265,8 +251,6 @@ def actualizar_producto(id_producto, code=None, name=None, category=None, brand=
         "brand": brand if brand is not None else producto_actual["brand"],
         "description": description if description is not None else producto_actual["description"],
         "stock": stock if stock is not None else producto_actual["stock"],
-        "wholesale_price": wholesale_price if wholesale_price is not None else producto_actual["wholesale_price"],
-        "retail_price": retail_price if retail_price is not None else producto_actual["retail_price"],
         "product_type": product_type if product_type is not None else producto_actual["product_type"],
         "oem_code": oem_code if oem_code is not None else producto_actual["oem_code"],
         "side": side if side is not None else producto_actual["side"],
@@ -279,7 +263,7 @@ def actualizar_producto(id_producto, code=None, name=None, category=None, brand=
 
     _validar_datos(
         nuevos["code"], nuevos["name"], nuevos["category"], nuevos["brand"],
-        nuevos["description"], nuevos["stock"], nuevos["wholesale_price"], nuevos["retail_price"],
+        nuevos["description"], nuevos["stock"],
         nuevos["product_type"], nuevos["oem_code"], nuevos["side"], nuevos["condition"],
         nuevos["supplier"], nuevos["location"], nuevos["purchase_date"], nuevos["purchase_price"],
     )
@@ -290,15 +274,14 @@ def actualizar_producto(id_producto, code=None, name=None, category=None, brand=
                 f"""
                 UPDATE {TABLA}
                 SET code = ?, name = ?, category = ?, brand = ?, description = ?,
-                    stock = ?, wholesale_price = ?, retail_price = ?, product_type = ?,
+                    stock = ?, product_type = ?,
                     oem_code = ?, side = ?, condition = ?, supplier = ?, location = ?,
                     purchase_date = ?, purchase_price = ?
                 WHERE id = ?
                 """,
                 (
                     nuevos["code"], nuevos["name"], nuevos["category"], nuevos["brand"],
-                    nuevos["description"], nuevos["stock"], nuevos["wholesale_price"],
-                    nuevos["retail_price"], nuevos["product_type"], nuevos["oem_code"],
+                    nuevos["description"], nuevos["stock"], nuevos["product_type"], nuevos["oem_code"],
                     nuevos["side"], nuevos["condition"], nuevos["supplier"], nuevos["location"],
                     nuevos["purchase_date"], nuevos["purchase_price"], id_producto,
                 ),

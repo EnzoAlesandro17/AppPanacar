@@ -20,8 +20,6 @@ def crear_tabla():
                 brand TEXT NOT NULL,
                 description TEXT NOT NULL,
                 stock INTEGER,
-                wholesale_price REAL NOT NULL,
-                retail_price REAL NOT NULL,
                 product_type TEXT NOT NULL DEFAULT 'Autoparte',
                 oem_code TEXT,
                 side TEXT,
@@ -49,6 +47,11 @@ def crear_tabla():
         for columna, definicion in columnas_nuevas.items():
             if columna not in columnas:
                 conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN {columna} {definicion}")
+
+        # Migración: precio mayorista/minorista se dejaron de manejar, se descartan de tablas viejas.
+        for columna in ("wholesale_price", "retail_price"):
+            if columna in columnas:
+                conexion.execute(f"ALTER TABLE {TABLA} DROP COLUMN {columna}")
 
         conexion.execute(
             f"""
