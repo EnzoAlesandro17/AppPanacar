@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tipos de siniestro borrados</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tipo in tipos %}
+        <tr>
+            <td>{{ tipo['name'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('claim_types.reactivar', id_tipo=tipo['id']) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">Reactivar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">No hay tipos de siniestro borrados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

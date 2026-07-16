@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tipos de siniestro</h1>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('claim_types.nuevo') }}">+ Nuevo tipo</a>
+    {% if session.get('role') == 'IT' %}
+    <a class="btn btn-secondary" href="{{ url_for('claim_types.borrados') }}">Ver borrados</a>
+    {% endif %}
+</p>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Nombre</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody data-reorder-url="{{ url_for('claim_types.reordenar') }}">
+        {% for tipo in tipos %}
+        <tr data-id="{{ tipo['id'] }}">
+            <td class="col-orden"><span class="drag-handle" title="Arrastrar para reordenar">⠿</span></td>
+            <td>{{ tipo['name'] }}</td>
+            <td>
+                <a href="{{ url_for('claim_types.editar', id_tipo=tipo['id']) }}">Editar</a>
+                <form method="post" action="{{ url_for('claim_types.borrar', id_tipo=tipo['id']) }}"
+                      onsubmit="return confirm('¿Borrar el tipo {{ tipo['name'] }}?');" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3">No hay tipos de siniestro cargados.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

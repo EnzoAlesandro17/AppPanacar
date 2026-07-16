@@ -2,32 +2,34 @@
 
 {% block content %}
 <h1>{{ 'Editar siniestro' if accion == 'editar' else 'Nuevo siniestro' }}</h1>
+{% if accion == 'editar' %}
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('siniestros.actividad', id_siniestro=siniestro.id) }}">Ver actividad</a>
+</p>
+{% endif %}
 <p class="leyenda-obligatorio"><span class="obligatorio">*</span> Campo obligatorio</p>
 <form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <fieldset class="alta-inline">
         <legend>Cliente <span class="obligatorio">*</span></legend>
-        <input type="radio" class="modo-radio" id="cliente-modo-existente" name="modo_cliente" value="existente"
-               {{ 'checked' if not (siniestro and siniestro.modo_cliente == 'nuevo') else '' }}>
-        <label class="modo-etiqueta" for="cliente-modo-existente">Cliente existente</label>
-        <input type="radio" class="modo-radio" id="cliente-modo-nuevo" name="modo_cliente" value="nuevo"
-               {{ 'checked' if siniestro and siniestro.modo_cliente == 'nuevo' else '' }}>
-        <label class="modo-etiqueta" for="cliente-modo-nuevo">Cargar cliente nuevo</label>
-
-        <div class="bloque-existente">
+        <div class="combobox" data-combobox="cliente-bloque-nuevo">
             <label>Cliente
-                <select name="client_id">
-                    <option value="">— Elegir —</option>
-                    {% for cliente in clientes %}
-                    <option value="{{ cliente['id'] }}" {{ 'selected' if siniestro and siniestro.client_id|string == cliente['id']|string else '' }}>
-                        {{ cliente['last_name'] }}, {{ cliente['name'] }} ({{ cliente['dni_cuit'] }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <input type="text" class="combobox-input" data-combobox-input autocomplete="off"
+                       placeholder="Buscar por nombre o DNI..." value="{{ cliente_texto_actual }}">
             </label>
+            <input type="hidden" name="client_id" data-combobox-id value="{{ cliente_id_actual }}">
+            <input type="hidden" name="modo_cliente" data-combobox-modo value="{{ modo_cliente_actual }}">
+            <ul class="combobox-lista" data-combobox-lista hidden>
+                {% for cliente in clientes %}
+                <li data-id="{{ cliente['id'] }}" data-texto="{{ cliente['last_name'] }}, {{ cliente['name'] }} ({{ cliente['dni_cuit'] }})">
+                    {{ cliente['last_name'] }}, {{ cliente['name'] }} ({{ cliente['dni_cuit'] }})
+                </li>
+                {% endfor %}
+                <li class="combobox-nuevo" data-combobox-nuevo>+ Agregar cliente nuevo</li>
+            </ul>
         </div>
-        <div class="bloque-nuevo">
+        <div class="bloque-nuevo" id="cliente-bloque-nuevo" {{ '' if modo_cliente_actual == 'nuevo' else 'hidden' }}>
             <label>Nombre
                 <input type="text" name="cliente_name" value="{{ siniestro.cliente_name or '' if siniestro else '' }}">
             </label>
@@ -48,26 +50,23 @@
 
     <fieldset class="alta-inline">
         <legend>Vehículo <span class="obligatorio">*</span></legend>
-        <input type="radio" class="modo-radio" id="vehiculo-modo-existente" name="modo_vehiculo" value="existente"
-               {{ 'checked' if not (siniestro and siniestro.modo_vehiculo == 'nuevo') else '' }}>
-        <label class="modo-etiqueta" for="vehiculo-modo-existente">Vehículo existente</label>
-        <input type="radio" class="modo-radio" id="vehiculo-modo-nuevo" name="modo_vehiculo" value="nuevo"
-               {{ 'checked' if siniestro and siniestro.modo_vehiculo == 'nuevo' else '' }}>
-        <label class="modo-etiqueta" for="vehiculo-modo-nuevo">Cargar vehículo nuevo</label>
-
-        <div class="bloque-existente">
+        <div class="combobox" data-combobox="vehiculo-bloque-nuevo">
             <label>Vehículo
-                <select name="vehicle_id">
-                    <option value="">— Elegir —</option>
-                    {% for vehiculo in vehiculos %}
-                    <option value="{{ vehiculo['id'] }}" {{ 'selected' if siniestro and siniestro.vehicle_id|string == vehiculo['id']|string else '' }}>
-                        {{ vehiculo['brand_name'] }} {{ vehiculo['model'] }} ({{ vehiculo['license_plate'] }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <input type="text" class="combobox-input" data-combobox-input autocomplete="off"
+                       placeholder="Buscar por modelo o dominio..." value="{{ vehiculo_texto_actual }}">
             </label>
+            <input type="hidden" name="vehicle_id" data-combobox-id value="{{ vehiculo_id_actual }}">
+            <input type="hidden" name="modo_vehiculo" data-combobox-modo value="{{ modo_vehiculo_actual }}">
+            <ul class="combobox-lista" data-combobox-lista hidden>
+                {% for vehiculo in vehiculos %}
+                <li data-id="{{ vehiculo['id'] }}" data-texto="{{ vehiculo['brand_name'] }} {{ vehiculo['model'] }} ({{ vehiculo['license_plate'] }})">
+                    {{ vehiculo['brand_name'] }} {{ vehiculo['model'] }} ({{ vehiculo['license_plate'] }})
+                </li>
+                {% endfor %}
+                <li class="combobox-nuevo" data-combobox-nuevo>+ Agregar vehículo nuevo</li>
+            </ul>
         </div>
-        <div class="bloque-nuevo">
+        <div class="bloque-nuevo" id="vehiculo-bloque-nuevo" {{ '' if modo_vehiculo_actual == 'nuevo' else 'hidden' }}>
             <label>Marca
                 <select name="vehiculo_brand_id">
                     <option value="">— Elegir —</option>
@@ -109,6 +108,16 @@
             {% endfor %}
         </select>
     </label>
+    <label>Tipo
+        <select name="claim_type_id">
+            <option value="">— Sin tipo —</option>
+            {% for tipo in tipos %}
+            <option value="{{ tipo['id'] }}" {{ 'selected' if siniestro and siniestro.claim_type_id|string == tipo['id']|string else '' }}>
+                {{ tipo['name'] }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
     <label>Estado <span class="obligatorio">*</span>
         <select name="claim_status_id" required>
             <option value="">— Elegir —</option>
@@ -137,31 +146,6 @@
         <textarea name="description">{{ siniestro.description or '' if siniestro else '' }}</textarea>
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
 </form>
-
-{% if accion == 'editar' %}
-<h1>Historial de estados</h1>
-<div class="table-scroll">
-<table>
-    <thead>
-        <tr>
-            <th>Fecha</th>
-            <th>Estado anterior</th>
-            <th>Estado nuevo</th>
-            <th>Usuario</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for paso in historial %}
-        <tr>
-            <td>{{ paso['changed_at'][:16].replace('T', ' ') }}</td>
-            <td>{{ paso['previous_status_name'] or '— (apertura) —' }}</td>
-            <td>{{ paso['new_status_name'] }}</td>
-            <td>{{ paso['changed_by_username'] or '—' }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
-{% endif %}
 {% endblock %}

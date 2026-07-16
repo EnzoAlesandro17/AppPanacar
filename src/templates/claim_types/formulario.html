@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ 'Editar estado' if accion == 'editar' else 'Nuevo estado' }}</h1>
+<h1>{{ 'Editar tipo' if accion == 'editar' else 'Nuevo tipo' }}</h1>
 <form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Nombre
-        <input type="text" name="name" value="{{ estado.name or '' if estado else '' }}" required>
+        <input type="text" name="name" value="{{ tipo.name or '' if tipo else '' }}" required>
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
     <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
 </form>
 
 {% if borrado_existente_id %}
-<form method="post" action="{{ url_for('claim_statuses.reactivar', id_estado=borrado_existente_id) }}" class="form-card">
+<form method="post" action="{{ url_for('claim_types.reactivar', id_tipo=borrado_existente_id) }}" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-success">Reactivar el estado existente</button>
+    <button type="submit" class="btn btn-success">Reactivar el tipo existente</button>
 </form>
 {% endif %}
 {% endblock %}

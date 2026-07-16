@@ -8,6 +8,7 @@ URLS_ADMINISTRACION = [
     "/validaciones/",
     "/marcas-vehiculos/",
     "/companias-seguro/",
+    "/tipos-siniestro/",
     "/estados-siniestro/",
     "/contabilidad/",
     "/preguntas-frecuentes/",

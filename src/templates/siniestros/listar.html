@@ -8,13 +8,15 @@
     <a class="btn btn-secondary" href="{{ url_for('siniestros.borrados') }}">Ver borrados</a>
     {% endif %}
 </p>
+<input type="search" class="buscador" data-buscador="tabla-siniestros" placeholder="Buscar siniestro...">
 <div class="table-scroll">
-<table>
+<table id="tabla-siniestros">
     <thead>
         <tr>
             <th>Cliente</th>
             <th>Vehículo</th>
             <th>Aseguradora</th>
+            <th>Tipo</th>
             <th>Estado</th>
             <th>Sucursal</th>
             <th>Fecha apertura</th>
@@ -27,10 +29,12 @@
             <td>{{ siniestro['client_last_name'] }}, {{ siniestro['client_name'] }}</td>
             <td>{{ siniestro['vehicle_model'] }} ({{ siniestro['vehicle_license_plate'] }})</td>
             <td>{{ siniestro['insurance_company_name'] or '—' }}</td>
+            <td>{{ siniestro['claim_type_name'] or '—' }}</td>
             <td>{{ siniestro['claim_status_name'] }}</td>
             <td>{{ siniestro['branch_name'] }}</td>
             <td>{{ siniestro['opened_date'] | fecha_visual }}</td>
             <td>
+                <a href="{{ url_for('siniestros.actividad', id_siniestro=siniestro['id']) }}">Actividad</a>
                 <a href="{{ url_for('siniestros.editar', id_siniestro=siniestro['id']) }}">Editar</a>
                 <form method="post" action="{{ url_for('siniestros.borrar', id_siniestro=siniestro['id']) }}"
                       onsubmit="return confirm('¿Borrar este siniestro?');" style="display:inline">
@@ -40,7 +44,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="7">No hay siniestros cargados.</td></tr>
+        <tr><td colspan="8">No hay siniestros cargados.</td></tr>
         {% endfor %}
     </tbody>
 </table>

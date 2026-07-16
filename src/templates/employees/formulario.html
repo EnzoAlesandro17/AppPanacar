@@ -43,6 +43,7 @@
         <input type="text" name="emergency_contact_phone" value="{{ empleado.emergency_contact_phone or '' if empleado else '' }}">
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
 </form>
 
 {% if borrado_existente_id %}

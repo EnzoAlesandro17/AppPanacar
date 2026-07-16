@@ -2,5 +2,20 @@
 
 {% block content %}
 <h1>Configuración</h1>
-<p>Todavía no hay nada acá.</p>
+
+<form method="post" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>
+        Tema
+        <select name="theme">
+            {% for tema in temas %}
+            <option value="{{ tema }}" {% if session.get('theme', 'light') == tema %}selected{% endif %}>
+                {{ "Oscuro" if tema == "dark" else "Claro" }}
+            </option>
+            {% endfor %}
+        </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
+</form>
 {% endblock %}

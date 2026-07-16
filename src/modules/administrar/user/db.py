@@ -14,6 +14,7 @@ _COLUMNAS_FINALES = f"""
     failed_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    theme TEXT NOT NULL DEFAULT 'light',
     status INTEGER NOT NULL DEFAULT 1
 """
 
@@ -39,6 +40,8 @@ def crear_tabla():
                 )
             if "sort_order" not in columnas:
                 conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+            if "theme" not in columnas:
+                conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN theme TEXT NOT NULL DEFAULT 'light'")
 
         # Rename de rol: "Admin" pasó a llamarse "IT". Update idempotente,
         # no hace nada una vez que ya no quedan filas con el nombre viejo.

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Actividad del siniestro</h1>
+<p class="actividad-resumen">
+    {{ cliente['last_name'] }}, {{ cliente['name'] }} —
+    {{ vehiculo['brand_name'] }} {{ vehiculo['model'] }} ({{ vehiculo['license_plate'] }})
+</p>
+<p class="acciones">
+    <a class="btn btn-secondary" href="{{ url_for('siniestros.editar', id_siniestro=siniestro['id']) }}">Editar datos del siniestro</a>
+</p>
+
+<div class="form-card">
+    <h2>Actualizar</h2>
+    <form method="post" action="{{ url_for('siniestros.actualizar_rapido', id_siniestro=siniestro['id']) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Estado
+            <select name="claim_status_id" required>
+                {% for estado in estados %}
+                <option value="{{ estado['id'] }}" {{ 'selected' if siniestro['claim_status_id']|string == estado['id']|string else '' }}>
+                    {{ estado['name'] }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Sucursal
+            <select name="branch_id" required>
+                {% for sucursal in sucursales %}
+                <option value="{{ sucursal['id'] }}" {{ 'selected' if siniestro['branch_id']|string == sucursal['id']|string else '' }}>
+                    {{ sucursal['name'] }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Compañía de seguro
+            <select name="insurance_company_id">
+                <option value="">— Sin aseguradora —</option>
+                {% for aseguradora in aseguradoras %}
+                <option value="{{ aseguradora['id'] }}" {{ 'selected' if siniestro['insurance_company_id']|string == aseguradora['id']|string else '' }}>
+                    {{ aseguradora['name'] }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Tipo
+            <select name="claim_type_id">
+                <option value="">— Sin tipo —</option>
+                {% for tipo in tipos %}
+                <option value="{{ tipo['id'] }}" {{ 'selected' if siniestro['claim_type_id']|string == tipo['id']|string else '' }}>
+                    {{ tipo['name'] }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
+    </form>
+</div>
+
+<div class="form-card">
+    <h2>Agregar observación</h2>
+    <form method="post" action="{{ url_for('siniestros.agregar_comentario_view', id_siniestro=siniestro['id']) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Observación
+            <textarea name="comentario" required></textarea>
+        </label>
+        <button type="submit" class="btn btn-primary">Agregar</button>
+    </form>
+</div>
+
+<h2>Línea de tiempo</h2>
+<ul class="actividad-lista">
+    {% for evento in actividad %}
+    <li class="actividad-item actividad-{{ evento.tipo }}">
+        <span class="actividad-fecha">{{ evento.fecha[:16].replace('T', ' ') }}</span>
+        <span class="actividad-texto">{{ evento.texto }}</span>
+        <span class="actividad-usuario">{{ evento.usuario or '—' }}</span>
+    </li>
+    {% else %}
+    <li class="actividad-item">Sin actividad todavía.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

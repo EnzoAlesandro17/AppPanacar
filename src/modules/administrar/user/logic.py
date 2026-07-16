@@ -16,6 +16,7 @@ from src.modules.administrar.user.db import TABLA, TABLA_SUCURSALES
 _ITERACIONES_HASH = 100_000
 
 ROLES = ("IT", "BackOffice", "Asesor")
+TEMAS = ("light", "dark")
 
 
 def _hashear_contrasena(contrasena):
@@ -185,6 +186,16 @@ def actualizar_usuario(id_usuario, username=None, password=None, role=None, empl
             conexion.commit()
         except sqlite3.IntegrityError as error:
             raise _traducir_error_integridad(error) from error
+
+
+def actualizar_tema(id_usuario, theme):
+    """Autogestión: el propio usuario elige claro/oscuro desde Configuración."""
+    if theme not in TEMAS:
+        raise ValidationError(f"El tema debe ser uno de: {', '.join(TEMAS)}.")
+
+    with obtener_conexion() as conexion:
+        conexion.execute(f"UPDATE {TABLA} SET theme = ? WHERE id = ?", (theme, id_usuario))
+        conexion.commit()
 
 
 def borrar_usuario(id_usuario):

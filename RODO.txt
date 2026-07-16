@@ -42,11 +42,11 @@ Para el día a día, ver git log.
   branch_id del form de autogestión (función separada, ni siquiera los
   parsea) — no hay forma de subirse de rol editando la propia cuenta aunque
   se manipule el HTML a mano. /usuarios/<id>/editar es el único lugar que
-  puede tocar esos campos, y sigue siendo Admin/BackOffice-only. El
+  puede tocar esos campos, y sigue siendo IT/BackOffice-only. El
   breadcrumb de /perfil es top-level a propósito, para seguir siendo
   alcanzable el día que Administración se bloquee para Asesor.
 - Cambiar la propia contraseña desde "Mi cuenta" exige la contraseña
-  actual; la edición admin no la exige (ahí el que cambia es Admin/
+  actual; la edición admin no la exige (ahí el que cambia es IT/
   BackOffice, no el dueño de la cuenta).
 - Fechas en formularios en dd/mm/aaaa, no <input type="date">: ese input
   respeta el idioma/región del navegador, no el lang de la página, y
@@ -69,30 +69,69 @@ Para el día a día, ver git log.
   empleado puede estar en una sucursal, en varias, o en ninguna.
 - Administración entera (Sucursales/Empleados/Usuarios/Validaciones + sus
   3 catálogos/Contabilidad/Preguntas frecuentes) pasó a ser exclusiva de
-  Admin/BackOffice. Se implementó con un before_request por blueprint
+  IT/BackOffice. Se implementó con un before_request por blueprint
   (restringir_a_administracion en src/auth.py) en vez de repetir el chequeo
   en cada vista: cubre rutas nuevas que se agreguen después sin acordarse
-  de proteger cada una a mano. Clientes/Vehículos/Stock/Siniestros/Links
-  útiles/Configuración/Mi cuenta quedan afuera a propósito, no son
+  de proteger cada una a mano. Clientes/Vehículos/Stock/Siniestros/Tareas/
+  Links útiles/Configuración/Mi cuenta quedan afuera a propósito, no son
   Administración. El tile "Administración" de la pantalla principal
   también se oculta para Asesor (no solo se bloquea la ruta).
 - "Preguntas frecuentes" se llenó de contenido estático (preguntas
   agrupadas por categoría con <details>/<summary>, sin JS ni CRUD, texto
-  fijo en el template). Se dejó reservada a Admin/BackOffice a propósito
+  fijo en el template). Se dejó reservada a IT/BackOffice a propósito
   (no a todos los roles, aunque Asesor sea quien más se beneficiaría de
   una guía): coherente con que ya quedó adentro de Administración al
   reordenar los tiles. Si el criterio cambia más adelante, sacarla del
   before_request de antes.
+- Roles renombrados de Admin/BackOffice/Asesor a IT/BackOffice/Asesor, con
+  "ver eliminados" y Bitácora acotados a IT únicamente (antes BackOffice
+  también veía eliminados). Clientes/Vehículos/Stock quedaron acotados por
+  sucursal (N:N, mismo patrón que employee_branches); Siniestros no, ahí
+  la sucursal es FK simple porque un siniestro se gestiona desde un único
+  lugar concreto.
+- Modo oscuro (Configuración, por usuario): se guarda como columna
+  `theme` en `users`, se lee a sesión al loguearse y se aplica con
+  `<html data-theme="...">` en base.html. Los colores del claro ya vivían
+  en variables CSS (`:root`); el oscuro se resolvió con un solo bloque
+  `:root[data-theme="dark"]` que las pisa, en vez de separar en
+  light.css/dark.css — la mayoría de las reglas son de layout puro sin
+  color, separar por tema hubiera duplicado ese layout en dos archivos
+  para separar 10 líneas de color. Único cuidado real: los inputs de
+  formulario no tenían background-color propio (quedaban blancos del
+  navegador por default), hubo que agregarlo explícito para que no
+  quedara texto claro sobre fondo blanco en oscuro.
+- Buscadores en listados largos (Clientes/Vehículos/Stock/Siniestros):
+  filtro en vivo 100% en el navegador (buscador.js), sin ir al server —
+  con las cantidades reales de la app (cientos de filas, no decenas de
+  miles) alcanza de sobra y evita la complejidad de un endpoint de
+  búsqueda server-side.
+- El selector de cliente/vehículo en Siniestros arrancó como radio
+  "existente/nuevo" + <select> nativo, y se rediseñó a un combobox
+  buscable (combobox.js) con "+ Agregar nuevo" al final de la lista
+  (queda solo si no matchea nada): pensado para cuando la lista de
+  clientes/vehículos crezca a cientos, un <select> nativo se vuelve
+  inmanejable para buscar a mano. El contrato con el backend
+  (`client_id`/`modo_cliente`/`cliente_name` etc.) no cambió, así que la
+  vista puede seguir rediseñándose sin tocar routes.py/logic.py.
+- Botón "Cancelar" al lado de todo "Guardar": vuelve con `history.back()`
+  (cancelar.js) en vez de apuntar a una URL fija por formulario — más
+  simple de mantener (un solo JS genérico para toda la app) y siempre
+  vuelve a donde el usuario realmente estaba, sea que haya entrado desde
+  el listado, desde Actividad, o desde otro lado.
+- Tipo de siniestro: catálogo nuevo (mismo patrón que Marcas/Aseguradoras/
+  Estados), campo opcional en el siniestro (mismo criterio que
+  aseguradora: no bloquear siniestros viejos que no lo tienen cargado).
 
 
 QUÉ SEGUIRÍA HACIENDO
 ----------------------
 - Permisos más finos dentro de cada módulo.
-- Diseñar qué va adentro de "Contabilidad" y "Configuración" (todavía
-  placeholders vacíos).
-- Decidir cómo se arma el frontend HTML y cómo habla con este backend
-  (¿API local por sucursal? tiene que resolver el escenario sin WiFi).
-  Todavía sin diseñar a propósito.
+- Diseñar qué va adentro de "Contabilidad" (todavía placeholder vacío).
+  "Configuración" ya dejó de estar vacía (tema claro/oscuro por usuario),
+  pero es el lugar natural para sumar más preferencias personales más
+  adelante — quedó como idea suelta, sin decidir todavía, una "sucursal
+  por defecto" para precargarla en los formularios de Clientes/Vehículos/
+  Stock/Siniestros cuando el usuario pertenece a varias.
 - Pensar el modo offline/multi-sucursal en serio: hoy es una sola DB
   SQLite local; con 2 sucursales y máquinas no siempre conectadas hay que
   decidir DB por sucursal + sincronización, o servidor central.
@@ -212,17 +251,20 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
   administrativo del Taller, pero no bloquea nada: ya está modelada como
   propia.
 - 2FA (TOTP con pyotp) para el login.
-- Módulo de siniestros: ya tiene tile y una página placeholder
+- Módulo de siniestros: el NÚCLEO ya está implementado de punta a punta
   (/siniestros). Es la entidad real que une cliente + vehículo +
-  aseguradora (no un dato suelto de cada uno por separado). Un mismo
+  aseguradora + tipo (no un dato suelto de cada uno por separado). Un mismo
   cliente puede tener varios siniestros, cada uno con su propia aseguradora
-  y su propio vehículo. Diseño charlado, todavía sin implementar:
-    - Sucursal: una sola (FK simple), no N:N como Clientes/Vehículos/Stock
-      — un siniestro se abre y se gestiona desde un lugar concreto, a
-      diferencia de esas otras entidades que sí pueden compartirse entre
-      sucursales.
-    - Selector de cliente existente o alta de uno nuevo sin salir del
-      formulario del siniestro; mismo criterio para vehículo.
+  y su propio vehículo. Lo que sigue es el diseño original charlado, con
+  lo ya implementado marcado como tal:
+    - [HECHO] Sucursal: una sola (FK simple), no N:N como Clientes/
+      Vehículos/Stock — un siniestro se abre y se gestiona desde un lugar
+      concreto, a diferencia de esas otras entidades que sí pueden
+      compartirse entre sucursales.
+    - [HECHO] Selector de cliente existente o alta de uno nuevo sin salir
+      del formulario del siniestro; mismo criterio para vehículo. Terminó
+      siendo un combobox buscable con "+ Agregar nuevo" (ver más arriba),
+      no el selector simple pensado originalmente.
     - Cliente y Vehículo son entidades independientes y persistentes en el
       tiempo, no atadas entre sí: si el mismo auto reingresa (misma
       patente, no cambia), es el mismo registro de vehículo de siempre, y
@@ -230,48 +272,49 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
       El siniestro es la foto de esa vez puntual (este cliente + este auto
       + esta vez), nunca un vínculo de dueño fijo — refuerza la decisión
       ya tomada de "vehicles sin client_id a propósito".
-    - Ubicación/estado del auto (dónde está: no ingresó, en tal sucursal,
-      listo, retirado por el cliente, etc.): dado que el vehículo persiste
-      independiente del siniestro, este dato cuelga del VEHÍCULO, no del
-      siniestro — un siniestro puede generar un cambio de ubicación (y
-      quedar linkeado a cuál lo generó, para trazabilidad), pero el auto
-      no queda atado a ese siniestro para siempre. Mismo patrón de
-      historial que los cambios de estado del siniestro. Sirve también
-      para el futuro módulo de ventas/concesionaria, no es exclusivo de
-      Siniestros. Todavía sin diseñar en detalle a propósito — se resuelve
-      cuando se encare el formulario de siniestro (y de nuevo cuando se
-      diseñe Ventas).
-    - Estado actual: FK a claim_statuses (el catálogo ya existe, editable
-      y reordenable desde Validaciones). El siniestro nunca se "cierra"
-      con un flag booleano tipo Tareas: camina por los estados del
-      catálogo hasta llegar a uno final (ej. "Finalizado"), y sigue
+    - [HECHO] Estado actual: FK a claim_statuses (el catálogo ya existe,
+      editable y reordenable desde Validaciones). El siniestro nunca se
+      "cierra" con un flag booleano tipo Tareas: camina por los estados
+      del catálogo hasta llegar a uno final (ej. "Finalizado"), y sigue
       existiendo con su historial completo por si el cliente vuelve con
       un reclamo más adelante.
-    - Historial de cambios de estado: tabla aparte (siniestro, estado
-      anterior, estado nuevo, quién lo cambió, cuándo) para tener una
-      línea de tiempo limpia, separada de los comentarios sueltos.
-    - Tareas/pendientes: un subsistema PROPIO de Siniestros, no reusar el
-      módulo Tareas general — cosas para hacer asociadas a la gestión de
-      ese siniestro puntual.
-    - "Actividad" del siniestro: una sola pantalla que mezcla, en orden
-      cronológico, comentarios libres + cambios de estado + los
-      pendientes de ese siniestro — más completo que el hilo plano de
-      comentarios que tiene Tareas.
-    - Id: por ahora un id genérico (autoincrement de la tabla). La idea
-      vieja de un id legible (resumen patente + DNI) queda pospuesta para
-      más adelante, no es prioridad ahora.
-    - Calendario: vista semanal clásica (lunes a domingo) de los
-      pendientes con vencimiento, más una lista de "vencidas" debajo para
-      entrar rápido a la tarea/siniestro correspondiente. Requiere que los
-      pendientes tengan fecha de vencimiento (campo nuevo, no existe hoy
-      ni en este subsistema ni en Tareas).
-    - El resto de los datos del siniestro (fecha de apertura, descripción
-      inicial, etc.) todavía sin terminar de definir.
-    - Orden sugerido para encararlo: primero el núcleo (cliente + vehículo
-      + aseguradora + estado, con su historial) andando de punta a punta;
-      recién después sumar el subsistema de tareas propio, el calendario y
-      la ubicación del auto. Se planeó bastante de una sola vez en esta
-      charla — mejor no intentar construirlo todo junto.
+    - [HECHO] Historial de cambios de estado: tabla aparte
+      (siniestro_status_history: siniestro, estado anterior, estado
+      nuevo, quién lo cambió, cuándo).
+    - [HECHO, no estaba en el diseño original] Tipo de siniestro: catálogo
+      nuevo (claim_types), campo opcional del siniestro, mismo patrón que
+      Estado pero sin historial propio (no hace falta trazar sus cambios).
+    - [HECHO a medias] "Actividad" del siniestro (/siniestros/<id>/
+      actividad): una sola pantalla que mezcla, en orden cronológico,
+      comentarios libres + cambios de estado, con un panel para cambiar
+      Estado/Sucursal/Aseguradora/Tipo sin ir al formulario completo. Lo
+      que falta para que sea la pantalla completa pensada originalmente:
+      mezclar ahí también los pendientes propios del siniestro (ver abajo).
+    - [PENDIENTE] Tareas/pendientes: un subsistema PROPIO de Siniestros,
+      no reusar el módulo Tareas general — cosas para hacer asociadas a la
+      gestión de ese siniestro puntual. Una vez que exista, se suma como
+      un tercer tipo de evento en la línea de tiempo de Actividad.
+    - [PENDIENTE] Ubicación/estado del auto (dónde está: no ingresó, en
+      tal sucursal, listo, retirado por el cliente, etc.): dado que el
+      vehículo persiste independiente del siniestro, este dato cuelga del
+      VEHÍCULO, no del siniestro — un siniestro puede generar un cambio de
+      ubicación (y quedar linkeado a cuál lo generó, para trazabilidad),
+      pero el auto no queda atado a ese siniestro para siempre. Mismo
+      patrón de historial que los cambios de estado del siniestro. Sirve
+      también para el futuro módulo de ventas/concesionaria, no es
+      exclusivo de Siniestros.
+    - [PENDIENTE] Id: por ahora un id genérico (autoincrement de la
+      tabla). La idea vieja de un id legible (resumen patente + DNI) queda
+      pospuesta para más adelante, no es prioridad ahora.
+    - [PENDIENTE] Calendario: vista semanal clásica (lunes a domingo) de
+      los pendientes con vencimiento, más una lista de "vencidas" debajo
+      para entrar rápido a la tarea/siniestro correspondiente. Requiere
+      que los pendientes tengan fecha de vencimiento (campo nuevo, no
+      existe hoy ni en este subsistema ni en Tareas).
+    - Orden sugerido para lo que falta: primero el subsistema de tareas
+      propio de Siniestros (que ya se puede sumar a Actividad), recién
+      después el calendario y la ubicación del auto — mismo criterio de
+      no construir todo junto que ya venía de antes.
 - Ventas/concesionaria (AresesCar): cuando se diseñe, que sea su propio
   módulo con sus propios estados, no una variante de Siniestros. Comparte
   Clientes/Vehículos/ubicación del auto con Siniestros, pero un auto en
@@ -282,9 +325,10 @@ VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
 
 COSAS BUENAS (de la base heredada, vale la pena no perderlas)
 -----------------------------------------------------------------
-- Separar en db/logic desde el arranque hizo que cada módulo nuevo fuera
-  calcar el patrón anterior en vez de inventar de nuevo — y esto sigue
-  siendo cierto ahora que no hay UI.
+- Separar en db/logic/routes desde el arranque hizo que cada módulo nuevo
+  fuera calcar el patrón anterior en vez de inventar de nuevo — y esto
+  siguió siendo cierto al sumar la capa web (Flask/HTML): cada módulo nuevo
+  (Siniestros, Tareas, Bitácora, catálogos) repitió el mismo esqueleto.
 - Validaciones compartidas centralizadas en vez de duplicadas por módulo.
 - Casos borde reales del negocio pensados antes de convertirse en bugs
   (DNI vs CUIT, precio mayorista/minorista).

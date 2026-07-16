@@ -8,6 +8,7 @@
         <input type="text" name="name" value="{{ aseguradora.name or '' if aseguradora else '' }}" required>
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
 </form>
 
 {% if borrado_existente_id %}

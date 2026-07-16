@@ -13,6 +13,7 @@ from src.modules.administrar.employees.logic import borrar_empleado, crear_emple
 from src.modules.administrar.products.logic import borrar_producto, crear_producto
 from src.modules.administrar.user.logic import borrar_usuario, crear_usuario
 from src.modules.administrar.validaciones.claim_statuses.logic import borrar_estado, crear_estado
+from src.modules.administrar.validaciones.claim_types.logic import borrar_tipo, crear_tipo
 from src.modules.administrar.validaciones.insurance_companies.logic import (
     borrar_aseguradora,
     crear_aseguradora,
@@ -173,6 +174,15 @@ def test_crear_estado_con_nombre_de_uno_borrado_levanta_registro_borrado_existen
 
     with pytest.raises(RegistroBorradoExistente) as excinfo:
         crear_estado("EstadoBorrable")
+    assert excinfo.value.id_existente == id_original
+
+
+def test_crear_tipo_con_nombre_de_uno_borrado_levanta_registro_borrado_existente(app):
+    id_original = crear_tipo("TipoBorrable")
+    borrar_tipo(id_original)
+
+    with pytest.raises(RegistroBorradoExistente) as excinfo:
+        crear_tipo("TipoBorrable")
     assert excinfo.value.id_existente == id_original
 
 

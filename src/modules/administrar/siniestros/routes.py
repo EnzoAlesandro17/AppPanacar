@@ -6,20 +6,24 @@ from src.constants.validations import parsear_fecha_visual
 from src.exceptions import RegistroBorradoExistente, ValidationError
 from src.modules.administrar.branches.logic import listar_sucursales
 from src.modules.administrar.clients.logic import crear_cliente, listar_clientes
+from src.modules.administrar.clients.logic import obtener_por_id as obtener_cliente_por_id
 from src.modules.administrar.siniestros.logic import (
     actualizar_siniestro,
+    agregar_comentario,
     borrar_siniestro,
     crear_siniestro,
-    listar_historial,
+    listar_actividad,
     listar_siniestros,
     obtener_por_id,
     reactivar_siniestro,
     visible_para_sucursales,
 )
 from src.modules.administrar.validaciones.claim_statuses.logic import listar_estados
+from src.modules.administrar.validaciones.claim_types.logic import listar_tipos
 from src.modules.administrar.validaciones.insurance_companies.logic import listar_aseguradoras
 from src.modules.administrar.validaciones.vehicle_brands.logic import listar_marcas
 from src.modules.administrar.vehicles.logic import crear_vehiculo, listar_vehiculos
+from src.modules.administrar.vehicles.logic import obtener_por_id as obtener_vehiculo_por_id
 from src.permissions import puede_ver_eliminados
 
 siniestros_bp = Blueprint("siniestros", __name__, url_prefix="/siniestros")
@@ -98,6 +102,7 @@ def _resolver_vehiculo(form):
 
 def _datos_comunes_del_form():
     valor_aseguradora = request.form.get("insurance_company_id", "").strip()
+    valor_tipo = request.form.get("claim_type_id", "").strip()
     return {
         "claim_status_id": _parsear_numero(request.form.get("claim_status_id", ""), "claim_status_id", int),
         "branch_id": _parsear_numero(request.form.get("branch_id", ""), "branch_id", int),
@@ -108,18 +113,67 @@ def _datos_comunes_del_form():
         "description": request.form.get("description", "").strip() or None,
         "insurance_company_id": int(valor_aseguradora) if valor_aseguradora else None,
         "quitar_aseguradora": not valor_aseguradora,
+        "claim_type_id": int(valor_tipo) if valor_tipo else None,
+        "quitar_tipo": not valor_tipo,
     }
 
 
-def _contexto_comun(accion):
+def _texto_cliente(cliente):
+    return f"{cliente['last_name']}, {cliente['name']} ({cliente['dni_cuit']})"
+
+
+def _texto_vehiculo(vehiculo):
+    return f"{vehiculo['brand_name']} {vehiculo['model']} ({vehiculo['license_plate']})"
+
+
+def _cliente_actual(siniestro, clientes):
+    """(client_id, texto) para precargar el combobox: el cliente elegido, o el
+    nombre tipeado si se estaba cargando uno nuevo cuando falló la validación."""
+    if not siniestro:
+        return "", ""
+    client_id = siniestro.get("client_id")
+    if client_id:
+        for cliente in clientes:
+            if str(cliente["id"]) == str(client_id):
+                return str(cliente["id"]), _texto_cliente(cliente)
+    if siniestro.get("modo_cliente") == "nuevo" and siniestro.get("cliente_name"):
+        return "", f"{siniestro.get('cliente_last_name', '')}, {siniestro.get('cliente_name', '')}"
+    return "", ""
+
+
+def _vehiculo_actual(siniestro, vehiculos):
+    if not siniestro:
+        return "", ""
+    vehicle_id = siniestro.get("vehicle_id")
+    if vehicle_id:
+        for vehiculo in vehiculos:
+            if str(vehiculo["id"]) == str(vehicle_id):
+                return str(vehiculo["id"]), _texto_vehiculo(vehiculo)
+    if siniestro.get("modo_vehiculo") == "nuevo" and siniestro.get("vehiculo_model"):
+        return "", siniestro.get("vehiculo_model", "")
+    return "", ""
+
+
+def _contexto_comun(accion, siniestro=None):
+    clientes = listar_clientes(branch_ids=session.get("branch_ids"))
+    vehiculos = listar_vehiculos(branch_ids=session.get("branch_ids"))
+    cliente_id_actual, cliente_texto_actual = _cliente_actual(siniestro, clientes)
+    vehiculo_id_actual, vehiculo_texto_actual = _vehiculo_actual(siniestro, vehiculos)
     return {
         "accion": accion,
-        "clientes": listar_clientes(branch_ids=session.get("branch_ids")),
-        "vehiculos": listar_vehiculos(branch_ids=session.get("branch_ids")),
+        "clientes": clientes,
+        "vehiculos": vehiculos,
         "marcas": listar_marcas(),
         "aseguradoras": listar_aseguradoras(),
+        "tipos": listar_tipos(),
         "estados": listar_estados(),
         "sucursales": _sucursales_seleccionables(),
+        "cliente_id_actual": cliente_id_actual,
+        "cliente_texto_actual": cliente_texto_actual,
+        "vehiculo_id_actual": vehiculo_id_actual,
+        "vehiculo_texto_actual": vehiculo_texto_actual,
+        "modo_cliente_actual": (siniestro.get("modo_cliente") if siniestro else None) or "existente",
+        "modo_vehiculo_actual": (siniestro.get("modo_vehiculo") if siniestro else None) or "existente",
     }
 
 
@@ -142,7 +196,7 @@ def nuevo():
                 client_id=client_id, vehicle_id=vehicle_id,
                 claim_status_id=datos["claim_status_id"], branch_id=datos["branch_id"],
                 opened_date=datos["opened_date"], insurance_company_id=datos["insurance_company_id"],
-                description=datos["description"],
+                claim_type_id=datos["claim_type_id"], description=datos["description"],
                 changed_by_user_id=session.get("user_id"), changed_by_username=session.get("username"),
             )
         except RegistroBorradoExistente:
@@ -153,13 +207,13 @@ def nuevo():
             )
             return render_template(
                 "siniestros/formulario.html", siniestro=dict(request.form),
-                migas=_migas("Nuevo siniestro"), **_contexto_comun("nueva"),
+                migas=_migas("Nuevo siniestro"), **_contexto_comun("nueva", siniestro=dict(request.form)),
             )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
                 "siniestros/formulario.html", siniestro=dict(request.form),
-                migas=_migas("Nuevo siniestro"), **_contexto_comun("nueva"),
+                migas=_migas("Nuevo siniestro"), **_contexto_comun("nueva", siniestro=dict(request.form)),
             )
         flash("Siniestro creado.", "success")
         return redirect(url_for("siniestros.editar", id_siniestro=id_siniestro))
@@ -191,7 +245,9 @@ def editar(id_siniestro):
                 id_siniestro, client_id=client_id, vehicle_id=vehicle_id,
                 claim_status_id=datos["claim_status_id"], branch_id=datos["branch_id"],
                 opened_date=datos["opened_date"], insurance_company_id=datos["insurance_company_id"],
-                quitar_aseguradora=datos["quitar_aseguradora"], description=datos["description"],
+                quitar_aseguradora=datos["quitar_aseguradora"],
+                claim_type_id=datos["claim_type_id"], quitar_tipo=datos["quitar_tipo"],
+                description=datos["description"],
                 changed_by_user_id=session.get("user_id"), changed_by_username=session.get("username"),
             )
         except RegistroBorradoExistente:
@@ -202,24 +258,107 @@ def editar(id_siniestro):
             )
             return render_template(
                 "siniestros/formulario.html", siniestro={**dict(request.form), "id": id_siniestro},
-                historial=listar_historial(id_siniestro),
-                migas=_migas("Editar siniestro"), **_contexto_comun("editar"),
+                migas=_migas("Editar siniestro"),
+                **_contexto_comun("editar", siniestro={**dict(request.form), "id": id_siniestro}),
             )
         except ValidationError as error:
             flash(str(error), "error")
             return render_template(
                 "siniestros/formulario.html", siniestro={**dict(request.form), "id": id_siniestro},
-                historial=listar_historial(id_siniestro),
-                migas=_migas("Editar siniestro"), **_contexto_comun("editar"),
+                migas=_migas("Editar siniestro"),
+                **_contexto_comun("editar", siniestro={**dict(request.form), "id": id_siniestro}),
             )
         flash("Siniestro actualizado.", "success")
         return redirect(url_for("siniestros.editar", id_siniestro=id_siniestro))
 
     return render_template(
         "siniestros/formulario.html", siniestro=dict(siniestro),
-        historial=listar_historial(id_siniestro),
-        migas=_migas("Editar siniestro"), **_contexto_comun("editar"),
+        migas=_migas("Editar siniestro"), **_contexto_comun("editar", siniestro=dict(siniestro)),
     )
+
+
+def _contexto_actividad():
+    return {
+        "estados": listar_estados(),
+        "aseguradoras": listar_aseguradoras(),
+        "tipos": listar_tipos(),
+        "sucursales": _sucursales_seleccionables(),
+    }
+
+
+@siniestros_bp.route("/<int:id_siniestro>/actividad")
+@login_required
+def actividad(id_siniestro):
+    siniestro = obtener_por_id(id_siniestro)
+    if siniestro is None:
+        flash("El siniestro no existe.", "error")
+        return redirect(url_for("siniestros.listar"))
+
+    redireccion = _requiere_acceso_al_siniestro(id_siniestro)
+    if redireccion:
+        return redireccion
+
+    return render_template(
+        "siniestros/actividad.html",
+        siniestro=dict(siniestro),
+        cliente=obtener_cliente_por_id(siniestro["client_id"]),
+        vehiculo=obtener_vehiculo_por_id(siniestro["vehicle_id"]),
+        actividad=listar_actividad(id_siniestro),
+        migas=_migas("Actividad"),
+        **_contexto_actividad(),
+    )
+
+
+@siniestros_bp.route("/<int:id_siniestro>/actividad/comentario", methods=["POST"])
+@login_required
+def agregar_comentario_view(id_siniestro):
+    if obtener_por_id(id_siniestro) is None:
+        flash("El siniestro no existe.", "error")
+        return redirect(url_for("siniestros.listar"))
+
+    redireccion = _requiere_acceso_al_siniestro(id_siniestro)
+    if redireccion:
+        return redireccion
+
+    try:
+        agregar_comentario(
+            id_siniestro, request.form.get("comentario", ""),
+            changed_by_user_id=session.get("user_id"), changed_by_username=session.get("username"),
+        )
+        flash("Observación agregada.", "success")
+    except ValidationError as error:
+        flash(str(error), "error")
+    return redirect(url_for("siniestros.actividad", id_siniestro=id_siniestro))
+
+
+@siniestros_bp.route("/<int:id_siniestro>/actividad/actualizar", methods=["POST"])
+@login_required
+def actualizar_rapido(id_siniestro):
+    if obtener_por_id(id_siniestro) is None:
+        flash("El siniestro no existe.", "error")
+        return redirect(url_for("siniestros.listar"))
+
+    redireccion = _requiere_acceso_al_siniestro(id_siniestro)
+    if redireccion:
+        return redireccion
+
+    valor_aseguradora = request.form.get("insurance_company_id", "").strip()
+    valor_tipo = request.form.get("claim_type_id", "").strip()
+    try:
+        actualizar_siniestro(
+            id_siniestro,
+            claim_status_id=_parsear_numero(request.form.get("claim_status_id", ""), "claim_status_id", int),
+            branch_id=_parsear_numero(request.form.get("branch_id", ""), "branch_id", int),
+            insurance_company_id=int(valor_aseguradora) if valor_aseguradora else None,
+            quitar_aseguradora=not valor_aseguradora,
+            claim_type_id=int(valor_tipo) if valor_tipo else None,
+            quitar_tipo=not valor_tipo,
+            changed_by_user_id=session.get("user_id"), changed_by_username=session.get("username"),
+        )
+        flash("Siniestro actualizado.", "success")
+    except ValidationError as error:
+        flash(str(error), "error")
+    return redirect(url_for("siniestros.actividad", id_siniestro=id_siniestro))
 
 
 @siniestros_bp.route("/<int:id_siniestro>/borrar", methods=["POST"])

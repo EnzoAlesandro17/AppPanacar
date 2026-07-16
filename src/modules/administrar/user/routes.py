@@ -100,6 +100,7 @@ def login():
         session["name"] = nombre
         session["iniciales"] = iniciales
         session["role"] = usuario["role"]
+        session["theme"] = usuario["theme"]
         session["branch_ids"] = obtener_sucursales_ids_usuario(usuario["id"])
         session["login_date"] = date.today().isoformat()
         registrar_evento(

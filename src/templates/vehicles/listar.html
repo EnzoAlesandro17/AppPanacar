@@ -8,7 +8,8 @@
     <a class="btn btn-secondary" href="{{ url_for('vehicles.borrados') }}">Ver borrados</a>
     {% endif %}
 </p>
-<table>
+<input type="search" class="buscador" data-buscador="tabla-vehiculos" placeholder="Buscar vehículo...">
+<table id="tabla-vehiculos">
     <thead>
         <tr>
             <th>Dominio</th>

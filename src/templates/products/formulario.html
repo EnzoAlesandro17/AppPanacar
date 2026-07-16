@@ -72,6 +72,7 @@
         <input type="number" name="purchase_price" min="0" step="0.01" value="{{ producto.purchase_price if producto and producto.purchase_price is not none else '' }}">
     </label>
     <button type="submit" class="btn btn-primary">Guardar</button>
+    <button type="button" class="btn btn-secondary" data-cancelar>Cancelar</button>
 </form>
 
 {% if borrado_existente_id %}

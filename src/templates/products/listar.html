@@ -8,8 +8,9 @@
     <a class="btn btn-secondary" href="{{ url_for('products.borrados') }}">Ver borrados</a>
     {% endif %}
 </p>
+<input type="search" class="buscador" data-buscador="tabla-productos" placeholder="Buscar producto...">
 <div class="table-scroll">
-<table>
+<table id="tabla-productos">
     <thead>
         <tr>
             <th>Código interno</th>
