@@ -114,9 +114,15 @@ header.barra .barra-inner {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 header.barra .marca {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-weight: 600;
 }
 
@@ -132,6 +138,7 @@ header.barra a:hover {
 
 .usuario-actual {
     position: relative;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -238,14 +245,16 @@ nav.menu .menu-inner {
     margin: 0 auto;
     padding: 7px 24px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 4px 8px;
 }
 
 nav.menu a {
     color: var(--color-text-primary);
     text-decoration: none;
     font-weight: 500;
+    white-space: nowrap;
     padding: 6px 8px;
     border-radius: var(--radius);
 }
@@ -261,6 +270,7 @@ nav.menu .miga-separador {
 nav.menu .miga-actual {
     color: var(--color-text-secondary);
     font-weight: 500;
+    white-space: nowrap;
     padding: 6px 8px;
 }
 
@@ -399,6 +409,12 @@ body.login-page main {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+}
+
+@media (max-width: 640px) {
+    .tiles {
+        grid-template-columns: 1fr;
+    }
 }
 
 .tile {
