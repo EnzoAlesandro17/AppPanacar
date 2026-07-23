@@ -118,7 +118,7 @@ Catálogos asociados (en Validaciones): **Tipo de siniestro** y **Estado de sini
 
 ### Interfaz
 
-- **Modo oscuro**: preferencia por usuario en `/configuracion` (columna `theme` en `users`), aplicada en sesión al loguearse (`<html data-theme="...">` en `base.html`). Los colores salen de variables CSS en `:root`, con overrides en `:root[data-theme="dark"]` — evita duplicar reglas de layout por tema.
+- **Modo oscuro**: preferencia por usuario en `/configuracion` (columna `theme` en `users`), aplicada en sesión al loguearse (`<html data-theme="...">` en `base.html`). Los colores salen de variables CSS en `:root`, con overrides en `:root[data-theme="dark"]` — evita duplicar reglas de layout por tema. Paleta y tipografía/espaciado basados en el design system interno. Ver detalle completo en: https://github.com/EnzoAlesandro17/design-system
 - **Buscadores**: Clientes, Vehículos, Stock y Siniestros tienen un filtro en vivo arriba de la tabla (`buscador.js`, sin ir al server) para no depender de scrollear listas largas.
 - **Botón Cancelar**: todo formulario con "Guardar" tiene al lado un "Cancelar" que vuelve a la página anterior sin guardar nada (`cancelar.js`, `history.back()`).
 - **Orden editable (arrastrar y soltar)**: sucursales, usuarios, marcas de vehículos, compañías de seguro, tipos y estados de siniestro tienen una columna `sort_order` y se reordenan arrastrando la fila desde el ícono ⠿ (`reorder.js`, Pointer Events — no la API nativa de HTML5, que no anda en touch). Clientes, productos, vehículos y siniestros no tienen esto: son listas que crecen mucho y no tiene sentido ordenarlas a mano (para esas están los buscadores).
