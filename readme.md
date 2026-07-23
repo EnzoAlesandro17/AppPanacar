@@ -4,15 +4,14 @@
 AppPanacar/
 ├── RODO.txt                        # Notas personales del desarrollo: qué se hizo, qué falta, decisiones e ideas a futuro
 ├── readme.md                       # Este archivo
-├── requirements.txt                 # Dependencias del proyecto (Flask, Flask-WTF, pytest)
+├── requirements.txt                 # Dependencias del proyecto (Flask, Flask-WTF, psycopg, pytest)
 ├── pytest.ini                        # testpaths = tests
 ├── app.py                           # Entrypoint: crea la app con create_app() y la corre (flask run / python app.py)
-├── .gitignore                       # Ignora .venv/, data/, __pycache__/, .pytest_cache/ y .env
+├── .gitignore                       # Ignora .venv/, __pycache__/, .pytest_cache/ y .env
 ├── tests/                            # Un archivo de test por módulo/feature; ver tests/ para el detalle
-│   └── conftest.py                   # Fixtures: app/client con una SQLite temporal por test, extraer_csrf(),
-│                                      # fixtures de usuario logueado (admin/backoffice/asesor)
-├── data/
-│   └── database.db                  # Base de datos SQLite local con los datos (se crea/usa en runtime, ignorada por git)
+│   └── conftest.py                   # Fixtures: app/client con un schema de Postgres propio y aislado por test,
+│                                      # extraer_csrf(), fixtures de usuario logueado (admin/backoffice/asesor)
+├── .env.example                     # Variables de entorno del deploy (DATABASE_URL, SECRET_KEY, etc.), documentadas
 ├── .venv/                           # Entorno virtual de Python (ignorado por git)
 ├── .vscode/
 │   └── settings.json                 # Configuración del editor (selección del entorno de Python)
@@ -24,7 +23,7 @@ AppPanacar/
     ├── auth.py                       # login_required (con corte de sesión por día calendario), restringir_a_administracion,
     │                                  # requiere_ver_eliminados, requiere_ver_bitacora
     ├── permissions.py                 # Reglas de qué rol (IT/BackOffice/Asesor) puede hacer qué acción, centralizadas
-    ├── config.py                     # Rutas base del proyecto, ubicación de la base de datos (DB_PATH) y SECRET_KEY
+    ├── config.py                     # IS_PRODUCTION (APP_ENV), DATABASE_URL y SECRET_KEY (obligatorios en producción)
     ├── exceptions.py                 # ValidationError y RegistroBorradoExistente, usadas en todo el backend
     ├── breadcrumbs.py                 # migas(): arma la lista (etiqueta, endpoint) que pinta el breadcrumb de navegación
     ├── cli.py                         # Comando `flask create-it`: bootstrap del primer usuario IT, sin depender de la UI
@@ -34,7 +33,9 @@ AppPanacar/
     │   └── validations.py             # Validaciones genéricas reutilizables: email, teléfono, DNI, CUIT, fechas
     │                                   # (dd/mm/aaaa <-> ISO), edad mínima, campos obligatorios, password (NIST 800-63B)
     ├── db/
-    │   └── connection.py              # Conexión centralizada a SQLite: GestorDB.conectar() y obtener_conexion()
+    │   └── connection.py              # Conexión centralizada a Postgres (GestorDB.conectar()/obtener_conexion()),
+    │                                   # con una capa de compatibilidad para no reescribir cada módulo: placeholders
+    │                                   # `?`, `cursor.lastrowid` vía RETURNING, `except sqlite3.IntegrityError`
     ├── static/
     │   ├── css/style.css              # Estilos compartidos por todas las páginas (variables de color, claro/oscuro)
     │   └── js/                        # Vanilla, sin librerías/CDN (la app tiene que poder andar offline):
@@ -129,9 +130,11 @@ Catálogos asociados (en Validaciones): **Tipo de siniestro** y **Estado de sini
 
 ### Correr la app y los tests
 
+Necesita Postgres corriendo (ver RODO.txt para el comando de Docker con el contenedor local). Copiar `.env.example` a `.env` y completar `DATABASE_URL` si no se usa el default de desarrollo.
+
 Para correr la app: `python app.py` (o `flask --app app run`) desde la raíz, con el venv activado.
 
-Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test arranca con una base SQLite temporal propia (`tests/conftest.py` parchea `src.db.connection.DB_PATH` con un archivo en un directorio temporal antes de crear la app), así que nunca tocan `data/database.db`.
+Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test crea su propio schema de Postgres (vacío y aislado) y lo borra al terminar (`tests/conftest.py` parchea `src.db.connection.SCHEMA`), así que nunca tocan datos reales.
 
 ## Medidas de seguridad
 
@@ -144,7 +147,7 @@ Para correr los tests: `pytest` desde la raíz, con el venv activado. Cada test 
 - **Sucursales acotan Clientes/Vehículos/Stock/Siniestros**: cada usuario pertenece a una o varias sucursales (`user_branches`); `listar_*` filtra por esas sucursales y cada vista de edición/borrado repite el chequeo a nivel de fila, no solo lo oculta del listado.
 - **Validación de documentos reales**: el CUIT valida su dígito verificador con el algoritmo módulo 11 (el mismo que usa AFIP). Teléfonos validados contra E.164.
 - **Borrado lógico**: ningún módulo hace `DELETE` real — todas las tablas tienen columna `status` (1 = activo, 0 = borrado).
-- **Consultas parametrizadas**: todas las queries a SQLite usan placeholders (`?`), nunca se arma SQL concatenando texto ingresado por el usuario.
+- **Consultas parametrizadas**: todas las queries a la base usan placeholders (`?`, traducidos a `%s` de Postgres en `src/db/connection.py`), nunca se arma SQL concatenando texto ingresado por el usuario.
 - **Protección CSRF**: `Flask-WTF` (`CSRFProtect`) activado globalmente. Cualquier POST sin token válido responde 400 antes de llegar a la vista.
 - **Usuarios (acceso) separado de Empleados (personal)**: `users` es solo username/password/role/`employee_id` opcional; los datos personales viven en `employees`. `/usuarios/perfil` ("Mi cuenta") solo deja tocar username y contraseña, nunca `role` ni `employee_id`.
 - **Cambio de contraseña propia exige la contraseña actual**: solo en `/usuarios/perfil` (autogestión); la edición admin (`/usuarios/<id>/editar`, IT/BackOffice) no la exige.

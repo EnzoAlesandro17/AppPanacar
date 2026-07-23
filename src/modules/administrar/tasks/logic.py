@@ -142,8 +142,8 @@ def listar_tareas(incluir_cerradas=False, branch_ids=None):
         parametros.extend(branch_ids)
 
     consulta = f"""
-        SELECT {TABLA}.*, GROUP_CONCAT(DISTINCT {TABLA_BRANCHES}.name) AS branch_names,
-               GROUP_CONCAT(DISTINCT {TABLA_USERS}.username) AS assignee_names
+        SELECT {TABLA}.*, STRING_AGG(DISTINCT {TABLA_BRANCHES}.name, ',') AS branch_names,
+               STRING_AGG(DISTINCT {TABLA_USERS}.username, ',') AS assignee_names
         FROM {TABLA}
         LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.task_id = {TABLA}.id
         LEFT JOIN {TABLA_BRANCHES}

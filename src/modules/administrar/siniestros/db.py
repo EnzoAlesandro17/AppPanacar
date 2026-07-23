@@ -1,4 +1,4 @@
-from src.db.connection import obtener_conexion
+from src.db.connection import columnas_existentes, obtener_conexion
 from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.clients.db import TABLA as TABLA_CLIENTS
 from src.modules.administrar.user.db import TABLA as TABLA_USERS
@@ -22,7 +22,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 client_id INTEGER NOT NULL REFERENCES {TABLA_CLIENTS}(id),
                 vehicle_id INTEGER NOT NULL REFERENCES {TABLA_VEHICLES}(id),
                 insurance_company_id INTEGER REFERENCES {TABLA_INSURANCE_COMPANIES}(id),
@@ -36,7 +36,7 @@ def crear_tabla():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        columnas = columnas_existentes(conexion, TABLA)
         if "claim_type_id" not in columnas:
             conexion.execute(
                 f"ALTER TABLE {TABLA} ADD COLUMN claim_type_id INTEGER REFERENCES {TABLA_CLAIM_TYPES}(id)"
@@ -45,7 +45,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_HISTORIAL} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 siniestro_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 previous_status_id INTEGER REFERENCES {TABLA_CLAIM_STATUSES}(id),
                 new_status_id INTEGER NOT NULL REFERENCES {TABLA_CLAIM_STATUSES}(id),
@@ -59,7 +59,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_COMENTARIOS} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 siniestro_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 comentario TEXT NOT NULL,
                 changed_by INTEGER REFERENCES {TABLA_USERS}(id),

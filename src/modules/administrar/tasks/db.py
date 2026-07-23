@@ -15,7 +15,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT,
                 created_by INTEGER NOT NULL REFERENCES {TABLA_USERS}(id),
@@ -30,7 +30,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_COMENTARIOS} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 task_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 user_id INTEGER NOT NULL REFERENCES {TABLA_USERS}(id),
                 username TEXT NOT NULL,
@@ -43,7 +43,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_ASIGNADOS} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 task_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 user_id INTEGER NOT NULL REFERENCES {TABLA_USERS}(id),
                 UNIQUE(task_id, user_id)
@@ -54,7 +54,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 task_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
                 UNIQUE(task_id, branch_id)
@@ -65,7 +65,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_VISTAS} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 task_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 user_id INTEGER NOT NULL REFERENCES {TABLA_USERS}(id),
                 last_seen_at TEXT NOT NULL,

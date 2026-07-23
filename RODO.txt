@@ -15,10 +15,25 @@ conectados al WiFi (hay que asumir que puede andar offline o con datos móviles)
 
 PLAN DE PASOS A SEGUIR (orden definido, sin fechas todavía)
 ---------------------------------------------------------------------
-1. Seguridad antes de exponer a internet: SECRET_KEY real, cookies
+1. [HECHO] Seguridad antes de exponer a internet: SECRET_KEY real, cookies
    Secure/HttpOnly/SameSite, debug=False y credenciales de prueba reales.
-2. Migrar de SQLite a Render Postgres (la conexión ya está centralizada en
-   src/db/connection.py, acota el esfuerzo).
+2. [HECHO] Migrar de SQLite a Postgres. connection.py quedó como una capa
+   de compatibilidad (placeholders `?`, `cursor.lastrowid` vía RETURNING,
+   `except sqlite3.IntegrityError`) para no tener que tocar los `except` ni
+   los mensajes de cada módulo. Local: contenedor Docker, no instalación
+   nativa —
+     docker run -d --name panacar-postgres \
+       -e POSTGRES_USER=panacar -e POSTGRES_PASSWORD=panacar_dev_local \
+       -e POSTGRES_DB=panacar -p 127.0.0.1:5432:5432 \
+       --restart unless-stopped postgres:17-alpine
+   Ese connection string ya es el default de src/config.py en desarrollo
+   (ver DATABASE_URL en .env.example). Tests: cada test crea su propio
+   schema de Postgres y lo borra al final (tests/conftest.py), reemplaza al
+   archivo SQLite temporal de antes — más lento (~3-4 min los 283 tests
+   contra ~30s de sqlite) pero aislado igual. Si en algún momento se vuelve
+   molesto, la optimización pendiente es un schema "plantilla" con las
+   tablas ya creadas que se clona por test en vez de correr las 14
+   migraciones de cero cada vez.
 3. Cloudflare R2 (plan pago) para archivos: subida directa browser -> R2
    con URLs prefirmadas, Render nunca carga los bytes de la foto.
 4. Carpetas por siniestro: tabla siniestro_archivos, clave interna

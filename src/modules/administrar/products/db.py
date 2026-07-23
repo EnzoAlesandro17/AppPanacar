@@ -1,4 +1,4 @@
-from src.db.connection import obtener_conexion
+from src.db.connection import columnas_existentes, obtener_conexion
 from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 from src.modules.administrar.validaciones.vehicle_brands.db import TABLA as TABLA_VEHICLE_BRANDS
 
@@ -13,7 +13,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 code TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL,
                 category TEXT NOT NULL,
@@ -33,7 +33,7 @@ def crear_tabla():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        columnas = columnas_existentes(conexion, TABLA)
         columnas_nuevas = {
             "product_type": "TEXT NOT NULL DEFAULT 'Autoparte'",
             "oem_code": "TEXT",
@@ -56,7 +56,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 product_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
                 UNIQUE(product_id, branch_id)
@@ -73,7 +73,7 @@ def crear_tabla_compatibilidad():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_COMPATIBILIDAD} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 product_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 brand_vehicle_id INTEGER NOT NULL REFERENCES {TABLA_VEHICLE_BRANDS}(id),
                 model TEXT NOT NULL,
@@ -82,7 +82,7 @@ def crear_tabla_compatibilidad():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA_COMPATIBILIDAD})")]
+        columnas = columnas_existentes(conexion, TABLA_COMPATIBILIDAD)
         if "brand_vehicle" in columnas and "brand_vehicle_id" not in columnas:
             # Migración: brand_vehicle era texto libre; pasa a ser una FK a vehicle_brands,
             # dando de alta en el catálogo cualquier marca que ya estuviera cargada como texto.

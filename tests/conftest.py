@@ -1,22 +1,36 @@
 import re
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import psycopg
 import pytest
+
+from src.config import DATABASE_URL
 
 
 @pytest.fixture
-def app(tmp_path, monkeypatch):
-    """App Flask con una base SQLite nueva y vacía por test, aislada de data/database.db."""
-    monkeypatch.setattr("src.db.connection.DB_PATH", str(tmp_path / "test.db"))
+def app(monkeypatch):
+    """App Flask con su propio schema de Postgres, vacío y aislado del resto
+    (mismo rol que cumplía el archivo SQLite temporal antes de Postgres)."""
+    schema = f"test_{uuid.uuid4().hex[:16]}"
+
+    with psycopg.connect(DATABASE_URL, autocommit=True) as admin_conexion:
+        admin_conexion.execute(f'CREATE SCHEMA "{schema}"')
+
+    monkeypatch.setattr("src.db.connection.SCHEMA", schema)
 
     from src.app import create_app
 
     application = create_app()
     application.config.update(TESTING=True)
-    return application
+
+    yield application
+
+    with psycopg.connect(DATABASE_URL, autocommit=True) as admin_conexion:
+        admin_conexion.execute(f'DROP SCHEMA "{schema}" CASCADE')
 
 
 @pytest.fixture

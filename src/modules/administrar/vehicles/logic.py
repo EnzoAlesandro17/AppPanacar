@@ -139,7 +139,7 @@ def listar_vehiculos(incluir_borrados=False, branch_ids=None):
 
     consulta = f"""
         SELECT {TABLA}.*, {TABLA_VEHICLE_BRANDS}.name AS brand_name,
-               GROUP_CONCAT({TABLA_BRANCHES}.name, ', ') AS branch_names
+               STRING_AGG({TABLA_BRANCHES}.name, ', ') AS branch_names
         FROM {TABLA}
         JOIN {TABLA_VEHICLE_BRANDS} ON {TABLA_VEHICLE_BRANDS}.id = {TABLA}.brand_id
         LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.vehicle_id = {TABLA}.id
@@ -148,7 +148,10 @@ def listar_vehiculos(incluir_borrados=False, branch_ids=None):
     """
     if condiciones:
         consulta += " WHERE " + " AND ".join(condiciones)
-    consulta += f" GROUP BY {TABLA}.id ORDER BY {TABLA_VEHICLE_BRANDS}.name, {TABLA}.model"
+    consulta += (
+        f" GROUP BY {TABLA}.id, {TABLA_VEHICLE_BRANDS}.name"
+        f" ORDER BY {TABLA_VEHICLE_BRANDS}.name, {TABLA}.model"
+    )
 
     with obtener_conexion() as conexion:
         return conexion.execute(consulta, parametros).fetchall()

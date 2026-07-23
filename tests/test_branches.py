@@ -64,7 +64,7 @@ def test_actualizar_sucursal_pisa_solo_los_campos_recibidos(app):
     assert sucursal["city"] == "Rosario"
 
 
-def test_actualizar_sucursal_inexistente_falla():
+def test_actualizar_sucursal_inexistente_falla(app):
     with pytest.raises(ValidationError, match="no existe"):
         actualizar_sucursal(9999, name="No existe")
 

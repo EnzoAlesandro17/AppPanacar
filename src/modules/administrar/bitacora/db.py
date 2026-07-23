@@ -14,7 +14,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 created_at TEXT NOT NULL,
                 user_id INTEGER REFERENCES {TABLA_USERS}(id),
                 username TEXT,

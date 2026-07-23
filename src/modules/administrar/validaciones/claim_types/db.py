@@ -15,7 +15,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
                 sort_order INTEGER NOT NULL DEFAULT 0,
                 status INTEGER NOT NULL DEFAULT 1

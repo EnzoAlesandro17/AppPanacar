@@ -1,4 +1,4 @@
-from src.db.connection import obtener_conexion
+from src.db.connection import columnas_existentes, obtener_conexion
 
 TABLA = "useful_links"
 
@@ -9,7 +9,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 label TEXT NOT NULL,
                 url TEXT NOT NULL,
                 observations TEXT,
@@ -19,7 +19,7 @@ def crear_tabla():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        columnas = columnas_existentes(conexion, TABLA)
         if "observations" not in columnas:
             conexion.execute(f"ALTER TABLE {TABLA} ADD COLUMN observations TEXT")
 

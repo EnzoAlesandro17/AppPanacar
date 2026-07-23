@@ -1,4 +1,4 @@
-from src.db.connection import obtener_conexion
+from src.db.connection import columnas_existentes, obtener_conexion
 
 TABLA = "vehicle_brands"
 
@@ -22,7 +22,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
                 sort_order INTEGER NOT NULL DEFAULT 0,
                 status INTEGER NOT NULL DEFAULT 1
@@ -30,7 +30,7 @@ def crear_tabla():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        columnas = columnas_existentes(conexion, TABLA)
         if "sort_order" not in columnas:
             # Orden editable a mano (ver logic.py reordenar_*, drag&drop en el listado); arranca
             # respetando el orden alfabético que tenía la lista hasta ahora.

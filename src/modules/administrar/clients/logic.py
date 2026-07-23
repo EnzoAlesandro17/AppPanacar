@@ -149,7 +149,7 @@ def listar_clientes(incluir_borrados=False, branch_ids=None):
         parametros.extend(branch_ids)
 
     consulta = f"""
-        SELECT {TABLA}.*, GROUP_CONCAT({TABLA_BRANCHES}.name, ', ') AS branch_names
+        SELECT {TABLA}.*, STRING_AGG({TABLA_BRANCHES}.name, ', ') AS branch_names
         FROM {TABLA}
         LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.client_id = {TABLA}.id
         LEFT JOIN {TABLA_BRANCHES}

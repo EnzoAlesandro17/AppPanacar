@@ -1,4 +1,4 @@
-from src.db.connection import obtener_conexion
+from src.db.connection import columnas_existentes, obtener_conexion
 from src.modules.administrar.branches.db import TABLA as TABLA_BRANCHES
 
 TABLA = "employees"
@@ -12,7 +12,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 position TEXT NOT NULL,
                 name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
@@ -28,7 +28,7 @@ def crear_tabla():
             """
         )
 
-        columnas = [fila["name"] for fila in conexion.execute(f"PRAGMA table_info({TABLA})")]
+        columnas = columnas_existentes(conexion, TABLA)
         if "sort_order" not in columnas:
             # Orden editable a mano (ver logic.py reordenar_*, drag&drop en el listado); arranca
             # respetando el orden alfabético (apellido, nombre) que tenía la lista hasta ahora.
@@ -48,7 +48,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 employee_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
                 UNIQUE(employee_id, branch_id)

@@ -12,7 +12,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 brand_id INTEGER NOT NULL REFERENCES {TABLA_VEHICLE_BRANDS}(id),
                 model TEXT NOT NULL,
                 year INTEGER NOT NULL,
@@ -28,7 +28,7 @@ def crear_tabla():
         conexion.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {TABLA_SUCURSALES} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 vehicle_id INTEGER NOT NULL REFERENCES {TABLA}(id),
                 branch_id INTEGER NOT NULL REFERENCES {TABLA_BRANCHES}(id),
                 UNIQUE(vehicle_id, branch_id)

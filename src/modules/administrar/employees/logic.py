@@ -131,7 +131,7 @@ def obtener_por_id(id_empleado):
 
 def listar_empleados(incluir_borrados=False):
     consulta = f"""
-        SELECT {TABLA}.*, GROUP_CONCAT({TABLA_BRANCHES}.name, ', ') AS branch_names
+        SELECT {TABLA}.*, STRING_AGG({TABLA_BRANCHES}.name, ', ') AS branch_names
         FROM {TABLA}
         LEFT JOIN {TABLA_SUCURSALES} ON {TABLA_SUCURSALES}.employee_id = {TABLA}.id
         LEFT JOIN {TABLA_BRANCHES}
