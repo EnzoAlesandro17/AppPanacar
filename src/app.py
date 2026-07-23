@@ -2,9 +2,10 @@ from datetime import timedelta
 
 from flask import Flask, request, session
 from flask_wtf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from src.cli import registrar_comandos
-from src.config import SECRET_KEY
+from src.config import IS_PRODUCTION, SECRET_KEY
 from src.constants.settings import Settings
 from src.constants.validations import formatear_fecha_visual
 from src.modules.administrar.administracion.routes import administracion_bp
@@ -73,6 +74,11 @@ def _inicializar_tablas():
 def create_app():
     app = Flask(__name__)
     app.secret_key = SECRET_KEY
+    # Render (y cualquier reverse proxy real) termina el HTTPS en su borde y
+    # reenvía por HTTP interno: sin esto, Flask ve todo como HTTP plano y
+    # request.remote_addr muestra la IP del proxy en vez de la del usuario
+    # (rompe la Bitácora). Un solo hop de proxy, que es lo que hay en Render.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
     # Vencimiento de la cookie de sesión: respaldo a nivel cookie del corte por
     # día calendario que hace login_required() en src/auth.py (ese es el que
     # realmente fuerza "una sesión no sirve para otro día"; esto solo evita que
@@ -81,6 +87,9 @@ def create_app():
     app.config["SESSION_REFRESH_EACH_REQUEST"] = False
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # Secure solo en producción (HTTPS real en Render): forzarla en local
+    # rompe el login, porque el browser no manda cookies Secure por HTTP.
+    app.config["SESSION_COOKIE_SECURE"] = IS_PRODUCTION
     CSRFProtect(app)
 
     @app.context_processor
