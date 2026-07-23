@@ -46,13 +46,13 @@ def test_asesor_ve_mensaje_de_permiso_denegado(asesor):
 def test_tile_administracion_oculto_para_asesor(asesor):
     resp = asesor.get("/")
 
-    assert b"Administraci\xc3\xb3n</a>" not in resp.data
+    assert "Administración".encode() not in resp.data
 
 
 def test_tile_administracion_visible_para_admin(admin):
     resp = admin.get("/")
 
-    assert b"Administraci\xc3\xb3n</a>" in resp.data
+    assert "Administración".encode() in resp.data
 
 
 def test_asesor_sigue_pudiendo_entrar_a_mi_cuenta(asesor):

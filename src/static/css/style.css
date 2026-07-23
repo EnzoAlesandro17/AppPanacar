@@ -8,9 +8,10 @@
     --color-info: #8B5CF6;
     --color-action-secondary: #06B6D4;
     --color-bg-primary: #FFFFFF;
-    --color-bg-secondary: #F0F0F0;
+    --color-bg-secondary: #FAFAFA;
     --color-surface: #FFFFFF;
-    --color-border: #CBD1D9;
+    --color-border: #E2E5EA;
+    --color-input-bg: #F3F4F6;
     --color-text-primary: #323332;
     --color-text-secondary: #6B7280;
 
@@ -43,6 +44,7 @@
     --color-bg-secondary: #1E1E1E;
     --color-surface: #242424;
     --color-border: #2A2A2A;
+    --color-input-bg: #1B1B1B;
     --color-text-primary: #E6E6E6;
     --color-text-secondary: #9CA3AF;
     --shadow-card: 0 1px 3px rgba(0, 0, 0, .5);
@@ -51,15 +53,6 @@
 :root[data-theme="dark"] th,
 :root[data-theme="dark"] tbody tr:hover {
     background: #16213a;
-}
-
-:root[data-theme="dark"] .tile-ancho {
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary);
-}
-
-:root[data-theme="dark"] .tile-ancho:hover {
-    background: rgba(56, 120, 236, .22);
 }
 
 :root[data-theme="dark"] .flash-success {
@@ -117,7 +110,7 @@ header.barra {
 header.barra .barra-inner {
     max-width: 900px;
     margin: 0 auto;
-    padding: 14px 24px;
+    padding: 10px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -243,7 +236,7 @@ nav.menu {
 nav.menu .menu-inner {
     max-width: 900px;
     margin: 0 auto;
-    padding: 10px 24px;
+    padding: 7px 24px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -269,6 +262,29 @@ nav.menu .miga-actual {
     color: var(--color-text-secondary);
     font-weight: 500;
     padding: 6px 8px;
+}
+
+.btn-volver {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: .82rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.btn-volver:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 /* Layout central */
@@ -313,7 +329,19 @@ body.login-page main {
     line-height: 1.2;
     cursor: pointer;
     text-decoration: none;
-    transition: background-color .15s ease, color .15s ease, opacity .15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+    transition: background-color .15s ease, color .15s ease, opacity .15s ease,
+        box-shadow .15s ease, transform .15s ease;
+}
+
+.btn:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+    transform: translateY(0);
 }
 
 .btn-primary {
@@ -374,6 +402,10 @@ body.login-page main {
 }
 
 .tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -382,23 +414,29 @@ body.login-page main {
     font-weight: 600;
     color: var(--color-text-primary);
     text-decoration: none;
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
 .tile:hover {
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(46, 95, 199, .12);
+    box-shadow: 0 4px 14px rgba(46, 95, 199, .14);
+    transform: translateY(-1px);
+}
+
+.tile-icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-primary);
+}
+
+.tile-icon svg {
+    width: 22px;
+    height: 22px;
 }
 
 .tile-ancho {
     grid-column: 1 / -1;
-    padding: 10px 20px;
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary);
-}
-
-.tile-ancho:hover {
-    background: rgba(46, 95, 199, .16);
+    padding: 14px 20px;
 }
 
 /* Buscador (filtro en vivo de tablas y selects largos) */
@@ -408,16 +446,18 @@ body.login-page main {
     width: 100%;
     margin: 0 0 12px;
     padding: 9px 10px;
-    border: 1px solid var(--color-border);
+    border: 1px solid transparent;
     border-radius: var(--radius);
     font-size: .95rem;
     font-family: inherit;
     color: var(--color-text-primary);
-    background-color: var(--color-surface);
+    background-color: var(--color-input-bg);
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 
 .buscador:focus {
     outline: none;
+    background-color: var(--color-surface);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(46, 95, 199, .15);
 }
@@ -579,12 +619,13 @@ body.login-page .form-card button[type="submit"] {
     width: 100%;
     margin-top: 6px;
     padding: 9px 10px;
-    border: 1px solid var(--color-border);
+    border: 1px solid transparent;
     border-radius: var(--radius);
     font-size: .95rem;
     font-family: inherit;
     color: var(--color-text-primary);
-    background-color: var(--color-surface);
+    background-color: var(--color-input-bg);
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 
 .form-card textarea {
@@ -596,6 +637,7 @@ body.login-page .form-card button[type="submit"] {
 .form-card select:focus,
 .form-card textarea:focus {
     outline: none;
+    background-color: var(--color-surface);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(46, 95, 199, .15);
 }
@@ -871,13 +913,13 @@ body.login-page .form-card button[type="submit"] {
 
 .pie {
     max-width: 900px;
-    margin: 40px auto 24px;
-    padding: 16px 24px 0;
+    margin: 28px auto 16px;
+    padding: 12px 24px 0;
     border-top: 1px solid var(--color-border);
     text-align: center;
     color: var(--color-text-secondary);
-    font-size: .8rem;
-    line-height: 1.5;
+    font-size: .78rem;
+    line-height: 1.4;
 }
 
 .pie p {
@@ -885,6 +927,6 @@ body.login-page .form-card button[type="submit"] {
 }
 
 body.login-page .pie {
-    margin-top: 24px;
+    margin-top: 20px;
     border-top: none;
 }
