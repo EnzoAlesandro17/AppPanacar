@@ -13,6 +13,27 @@ sucursales. Uso real: 6 computadoras y 6 celulares, no necesariamente
 conectados al WiFi (hay que asumir que puede andar offline o con datos móviles).
 
 
+PLAN DE PASOS A SEGUIR (orden definido, sin fechas todavía)
+---------------------------------------------------------------------
+1. Seguridad antes de exponer a internet: SECRET_KEY real, cookies
+   Secure/HttpOnly/SameSite, debug=False y credenciales de prueba reales.
+2. Migrar de SQLite a Render Postgres (la conexión ya está centralizada en
+   src/db/connection.py, acota el esfuerzo).
+3. Cloudflare R2 (plan pago) para archivos: subida directa browser -> R2
+   con URLs prefirmadas, Render nunca carga los bytes de la foto.
+4. Carpetas por siniestro: tabla siniestro_archivos, clave interna
+   invisible (id del siniestro, con padding) + etiqueta visible calculada
+   YY-MM-Dominio.
+5. Congelar fecha de ingreso y dominio tras crear el siniestro/vehículo
+   (excepción para IT si hay que corregir un error real de carga).
+6. La subida de archivos no depende del claim_status del siniestro:
+   disponible siempre, en cualquier estado.
+7. Deploy en Render: Procfile/gunicorn, variables de entorno, servicio
+   Postgres conectado.
+8. Backups periódicos a Google Drive (prioridad baja: Render Postgres y
+   R2 ya son razonablemente seguros de por sí).
+
+
 DECISIONES QUE VALE LA PENA RECORDAR
 ---------------------------------------
 Esto NO es un changelog: lo que se ve leyendo el código o los templates no
@@ -227,13 +248,15 @@ Seguridad a resolver EN LA PC / infraestructura (no es código del repo):
     pasos en vez de hacerlos a mano cada vez.
 
 ¿Postgres desde ya?
-  - Todavía no. SQLite alcanza para esta etapa (2 sucursales, un puñado de
-    dispositivos) y toda la conexión a DB ya está centralizada en
-    src/db/connection.py, lo que acota el esfuerzo de migrar el día que
-    haga falta. La señal real para migrar sería ver, durante esta misma
-    prueba de rendimiento, errores de "database is locked" por escrituras
-    concurrentes desde varias sucursales a la vez — ahí se migra con datos
-    reales en la mano, no antes por las dudas.
+  - [SUPERADO por el plan de deploy en Render, ver PLAN DE PASOS A SEGUIR
+    arriba] Razonamiento original, para no perder el porqué: SQLite
+    alcanzaba para esta etapa (2 sucursales, un puñado de dispositivos) y
+    toda la conexión a DB ya está centralizada en src/db/connection.py,
+    lo que acota el esfuerzo de migrar el día que haga falta. La señal
+    real para migrar iba a ser ver errores de "database is locked" por
+    escrituras concurrentes — pero migrar a Render Postgres es la opción
+    más simple para el deploy en sí, así que se adelanta sin esperar esa
+    señal.
 
 
 VISIÓN A FUTURO (todavía sin diseñar, solo para no perder la idea)
